@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+void Serial_Init(uint32_t baudrate);
+
 uint32_t Serial_Print(const char *str);
 
 uint32_t Serial_Println(const char *str);

@@ -1,7 +1,10 @@
 #include "chip.h"
 #include "can.h"
 #include "ccand_11xx.h"
+
+#include "adc.h"
 #include "serial.h"
+#include "can_constants.h"
 
 /*****************************************************************************
  * Private types/enumerations/variables
@@ -14,8 +17,8 @@ const uint32_t OscRateIn = 12000000;
 
 volatile uint32_t msTicks;
 
-const uint32_t adcMessagePeriod_ms = 50;
-const uint32_t rpmMessagePeriod_ms = 20;
+const uint32_t adcMessagePeriod_ms = 1000 / FRONT_CAN_NODE_ANALOG_SENSORS__freq;
+const uint32_t rpmMessagePeriod_ms = 1000 / FRONT_CAN_NODE_WHEEL_SPEED__freq;
 
 uint32_t lastAdcMessage_ms = 0;
 uint32_t lastRpmMessage_ms = 0;
@@ -48,36 +51,56 @@ void Process_CAN_Inputs(void) {
   }
 }
 
-void sendAdcMessage() {
-  const uint8_t can_out_id = 1;
-  const uint8_t can_out_bytes = 8;
+void sendADCMessage() {
+  uint8_t steering_val = ADC_Read_Byte(STEERING_CHANNEL);
+  uint8_t accel_1_val = ADC_Read_Byte(ACCEL_1_CHANNEL);
+  uint8_t accel_2_val = ADC_Read_Byte(ACCEL_2_CHANNEL);
+  uint8_t brake_1_val = ADC_Read_Byte(BRAKE_1_CHANNEL);
+  uint8_t brake_2_val = ADC_Read_Byte(BRAKE_2_CHANNEL);
 
+  /*
+  Serial_Print("s: ");
+  Serial_PrintNumber(steering_val, 10);
+  Serial_Print(", a1: ");
+  Serial_PrintNumber(accel_1_val, 10);
+  Serial_Print(", a2: ");
+  Serial_PrintNumber(accel_2_val, 10);
+  Serial_Print(", b1: ");
+  Serial_PrintNumber(brake_1_val, 10);
+  Serial_Print(", b2: ");
+  Serial_PrintlnNumber(brake_2_val, 10);
+  */
+
+  const uint32_t can_out_id = FRONT_CAN_NODE_ANALOG_SENSORS__id;
+  const uint8_t steering_idx = __FRONT_CAN_NODE_ANALOG_SENSORS__STEERING__start >> 3;
+  const uint8_t accel_1_idx = __FRONT_CAN_NODE_ANALOG_SENSORS__RIGHT_ACCEL__start >> 3;
+  const uint8_t accel_2_idx = __FRONT_CAN_NODE_ANALOG_SENSORS__LEFT_ACCEL__start >> 3;
+  const uint8_t brake_1_idx = __FRONT_CAN_NODE_ANALOG_SENSORS__FRONT_BRAKE__start >> 3;
+  const uint8_t brake_2_idx = __FRONT_CAN_NODE_ANALOG_SENSORS__REAR_BRAKE__start >> 3;
+
+  const uint8_t can_out_bytes = 5;
   uint8_t data[can_out_bytes];
-  data[0] = 0x01;
-  data[1] = 0x12;
-  data[2] = 0x23;
-  data[3] = 0x34;
-  data[4] = 0x45;
-  data[5] = 0x56;
-  data[6] = 0x67;
-  data[7] = 0x78;
+
+  data[steering_idx] = steering_val;
+  data[accel_1_idx] = accel_1_val;
+  data[accel_2_idx] = accel_2_val;
+  data[brake_1_idx] = brake_1_val;
+  data[brake_2_idx] = brake_2_val;
 
   CAN_Transmit(can_out_id, data, can_out_bytes);
-  Serial_Println("Sent CAN message");
 }
 
 void sendRpmMessage() {
-
+  // TODO
 }
 
 /**
  * Transmits CAN messages
  */
 void Process_CAN_Outputs(void) {
-  //Send CAN message every second
   if (msTicks - lastAdcMessage_ms > adcMessagePeriod_ms) {
     lastAdcMessage_ms = msTicks;
-    sendAdcMessage();
+    sendADCMessage();
   }
   if (msTicks - lastRpmMessage_ms > rpmMessagePeriod_ms) {
     lastRpmMessage_ms = msTicks;
@@ -94,19 +117,11 @@ int main(void) {
     while(1);
   }
 
-  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_6, (IOCON_FUNC1 | IOCON_MODE_INACT)); /* RXD */
-  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_7, (IOCON_FUNC1 | IOCON_MODE_INACT)); /* TXD */
-
-  Chip_UART_Init(LPC_USART);
-  Chip_UART_SetBaud(LPC_USART, SERIAL_BAUDRATE);
-  // Configure data width, parity, and stop bits
-  Chip_UART_ConfigData(LPC_USART, (UART_LCR_WLEN8 | UART_LCR_SBS_1BIT | UART_LCR_PARITY_DIS));
-  Chip_UART_SetupFIFOS(LPC_USART, (UART_FCR_FIFO_EN | UART_FCR_TRG_LEV2));
-  Chip_UART_TXEnable(LPC_USART);
+  Serial_Init(SERIAL_BAUDRATE);
+  CAN_Init(CAN_BAUDRATE);
+  ADC_Init();
 
   Serial_Println("Started up");
-
-  CAN_Init(CAN_BAUDRATE);
 
   while (1) {
     Process_CAN_Inputs();
