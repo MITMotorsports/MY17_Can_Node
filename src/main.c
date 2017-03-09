@@ -38,16 +38,14 @@ void Process_CAN_Inputs(void) {
   CCAN_MSG_OBJ_T rx_msg;
   uint32_t ret = CAN_Receive(&rx_msg);
 
-  if (ret == NO_RX_CAN_MESSAGE) {
-    // No message received.
-    // TODO really need a way to distinguish no message available
-    // from an error while receiving messages...
-  } else if (ret == NO_CAN_ERROR) {
+  if (ret == NO_CAN_ERROR) {
     Serial_Print("CAN_rcv, id=");
     Serial_PrintlnNumber(rx_msg.mode_id, 10);
-  } else {
-    // Should never happen
-    Serial_Println("Unexpected CAN error state!!");
+  } else if (ret != NO_RX_CAN_MESSAGE) {
+    Serial_Println("CAN error state reached on receive attempt:");
+    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
+    Serial_Println("Attempting CAN peripheral reset to clear error...");
+    CAN_ResetPeripheral();
   }
 }
 
@@ -87,7 +85,13 @@ void sendADCMessage() {
   data[brake_1_idx] = brake_1_val;
   data[brake_2_idx] = brake_2_val;
 
-  CAN_Transmit(can_out_id, data, can_out_bytes);
+  uint32_t ret = CAN_Transmit(can_out_id, data, can_out_bytes);
+  if (ret != NO_CAN_ERROR) {
+    Serial_Println("CAN error state reached on write attempt:");
+    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
+    Serial_Println("Attempting CAN peripheral reset to clear error...");
+    CAN_ResetPeripheral();
+  }
 }
 
 void sendRpmMessage() {

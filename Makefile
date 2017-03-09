@@ -106,7 +106,7 @@ AS_DEFS = -D__STARTUP_CLEAR_BSS -D__START=main
 
 # headers, current folder is always included)
 
-INC_DIRS_CROSS = inc/ ../../EVTGitHub/lpc11cx4-library/lpc_chip_11cxx_lib/inc ../../EVTGitHub/lpc11cx4-library/evt_lib/inc/ ../lpc11cx4-library/lpc_chip_11cxx_lib/inc ../lpc11cx4-library/evt_lib/inc/
+INC_DIRS_CROSS = inc/ ../lpc11cx4-library/lpc_chip_11cxx_lib/inc/ ../lpc11cx4-library/evt_lib/inc/
 
 
 
@@ -132,7 +132,7 @@ LIBS =
 
 # folders with source files, current folder is always included)
 
-SRCS_DIRS = ../../EVTGitHub/lpc11cx4-library/lpc_chip_11cxx_lib/src ../../EVTGitHub/lpc11cx4-library/evt_lib/src/ ../lpc11cx4-library/lpc_chip_11cxx_lib/src ../lpc11cx4-library/evt_lib/src/ src/
+SRCS_DIRS = src/ ../lpc11cx4-library/lpc_chip_11cxx_lib/src/ ../lpc11cx4-library/evt_lib/src/
 
 
 
