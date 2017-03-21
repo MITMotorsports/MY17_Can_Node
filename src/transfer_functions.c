@@ -1,5 +1,7 @@
 #include "transfer_functions.h"
 
+#include "common.h"
+
 #define ACCEL_1_LOWER_BOUND 246
 #define ACCEL_1_UPPER_BOUND 885
 #define ACCEL_2_LOWER_BOUND 246
@@ -47,4 +49,3 @@ uint16_t linear_transfer_fn(uint32_t reading, uint16_t lower_bound, uint16_t upp
   uint16_t short_val = (uint16_t)(reading);
   return short_val;
 }
-

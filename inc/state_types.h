@@ -5,12 +5,19 @@
 #include <stdbool.h>
 
 typedef struct ADC_INPUT {
+  // The following are all integers in [0:1023] representing output from some
+  // analog sensor on the car.
   uint16_t accel_1_raw;
   uint16_t accel_2_raw;
   uint16_t brake_1_raw;
   uint16_t brake_2_raw;
   uint16_t steering_raw;
+
+  // TODO consider moving timing logic out of this struct.
+
+  // Time in ms that the ADC peripheral was last read from.
   uint32_t lastUpdate_ms;
+  // Current time in ms.
   uint32_t msTicks;
 } ADC_INPUT_T;
 
@@ -55,12 +62,21 @@ typedef struct ADC_STATE {
   // waiting for the next scheduled sending.
   bool urgent_message;
 
+  // TODO consider moving timing logic out of this struct as well.
+
+  // Current time in ms.
   uint32_t msTicks;
 } ADC_STATE_T;
 
 typedef struct ADC_OUTPUT {
-  uint8_t requested_torque;
+  // Amount of torque that the CAN node decides to output in [-32768:32767]
+  // TODO decide endian-ness and whether we will clamp this.
+  int16_t requested_torque;
+
+  // Amount of brake pressure in [0:255]
   uint8_t brake_pressure;
+
+  // Steering position in [0:255] with 0 being fully right.
   uint8_t steering_position;
 } ADC_OUTPUT_T;
 

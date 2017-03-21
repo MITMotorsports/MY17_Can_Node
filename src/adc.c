@@ -7,10 +7,11 @@
 #include "chip.h"
 #include "transfer_functions.h"
 
-static ADC_CLOCK_SETUP_T adc_setup;
 #define ADC_UPDATE_PERIOD_MS 10
 
-void ADC_Init() {
+static ADC_CLOCK_SETUP_T adc_setup;
+
+void ADC_Init(void) {
   const uint32_t ADC_PIN_CONFIG = IOCON_FUNC2 | IOCON_MODE_INACT | IOCON_ADMODE_EN;
   Serial_Print("Setting config to ");
   Serial_PrintlnNumber(ADC_PIN_CONFIG, 2);

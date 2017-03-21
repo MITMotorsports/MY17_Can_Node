@@ -1,34 +1,13 @@
 #include "state.h"
 
+#include "common.h"
 #include "transfer_functions.h"
 
 #define IMPLAUSIBILITY_REPORT_MS 100
-
-#define BYTE_MAX 255
-
-/****************************** PUBLIC METHODS BELOW *************************/
-
-void update_adc_state(ADC_INPUT_T *adc_input, ADC_STATE_T *adc_state) {
-  read_input(adc_input, adc_state);
-  observe_plausibility(adc_state);
-  report_plausibility(adc_state);
-  check_conflict(adc_state);
-}
-
-void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
-  // TODO more complicated logic for determining torque - for now just use raw throttle
-  uint16_t pedal_travel = min(adc_state->accel_1_travel, adc_state->accel_2_travel);
-  uint16_t brake_travel = min(adc_state->brake_1_travel, adc_state->brake_2_travel);
-
-  bool should_zero =
-      adc_state->has_conflict || adc_state->implausibility_reported;
-
-  adc_output->requested_torque = should_zero ? 0 : scale(pedal_travel, TRAVEL_MAX, BYTE_MAX);
-  adc_output->brake_pressure = scale(brake_travel, TRAVEL_MAX, BYTE_MAX);
-  adc_output->steering_position = scale(adc_state->steering_travel, TRAVEL_MAX, BYTE_MAX);
-}
-
-/***************** PRIVATE BUT TESTED METHODS BELOW **************************/
+#define IMPLAUSIBILITY_THROTTLE_TRAVEL 100
+#define CONFLICT_BEGIN_THROTTLE_TRAVEL 250
+#define CONFLICT_BEGIN_BRAKE_TRAVEL 250
+#define CONFLICT_END_THROTTLE_TRAVEL 50
 
 void read_input(ADC_INPUT_T *adc_input, ADC_STATE_T *adc_state) {
   adc_state->accel_1_travel = accel_1_transfer_fn(adc_input->accel_1_raw);
@@ -77,7 +56,8 @@ void check_conflict(ADC_STATE_T *adc_state) {
 
   // Conflict state: Remove conflict if throttle < 5% travel (EV2.5.1)
   if (adc_state->has_conflict) {
-    bool should_remove_conflict = throttle_travel < 50;
+    bool should_remove_conflict =
+        throttle_travel < CONFLICT_END_THROTTLE_TRAVEL;
     if (should_remove_conflict) {
       // Conflict was lifted, so send urgent message so we can drive again
       adc_state->urgent_message = true;
@@ -89,7 +69,9 @@ void check_conflict(ADC_STATE_T *adc_state) {
   // and brakes are mechanically actuated (EV2.5).
   // TODO figure out what constitutes "mechanically actuated"
   else {
-    bool should_add_conflict = throttle_travel < 250 && brake_travel > 250;
+    bool should_add_conflict =
+        throttle_travel > CONFLICT_BEGIN_THROTTLE_TRAVEL &&
+        brake_travel > CONFLICT_BEGIN_BRAKE_TRAVEL;
     adc_state->has_conflict = should_add_conflict;
   }
 }
@@ -97,10 +79,5 @@ void check_conflict(ADC_STATE_T *adc_state) {
 bool check_plausibility(uint16_t accel_1_travel, uint16_t accel_2_travel) {
   uint16_t max_travel = max(accel_1_travel, accel_2_travel);
   uint16_t min_travel = min(accel_1_travel, accel_2_travel);
-  return max_travel - min_travel < 100;
+  return max_travel - min_travel < IMPLAUSIBILITY_THROTTLE_TRAVEL;
 }
-
-uint32_t scale(uint32_t val, uint32_t old_scale, uint32_t new_scale) {
-  return (val * new_scale) / old_scale;
-}
-

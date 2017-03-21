@@ -20,7 +20,7 @@
 #define BRAKE_1_PIN IOCON_PIO1_3
 #define BRAKE_2_PIN IOCON_PIO1_4
 
-void ADC_Init();
+void ADC_Init(void);
 
 uint16_t ADC_Read(ADC_CHANNEL_T channel);
 uint8_t ADC_Read_Byte(ADC_CHANNEL_T channel);

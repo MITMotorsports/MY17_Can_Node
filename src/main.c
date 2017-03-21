@@ -4,6 +4,7 @@
 
 #include "adc.h"
 #include "can_constants.h"
+#include "output.h"
 #include "state.h"
 #include "serial.h"
 #include "transfer_functions.h"
@@ -105,7 +106,7 @@ void send_adc_message(ADC_OUTPUT_T *adc_output) {
 
 }
 
-void send_rpm_message() {
+void send_rpm_message(void) {
   // TODO
 }
 
@@ -117,9 +118,11 @@ void handle_inputs(void) {
   update_adc_inputs(&adc_input);
 }
 
-void update_state() {
-  // For now only state is in ADC
-  update_adc_state(&adc_input, &adc_state);
+void update_state(void) {
+  read_input(&adc_input, &adc_state);
+  observe_plausibility(&adc_state);
+  report_plausibility(&adc_state);
+  check_conflict(&adc_state);
 }
 
 /**
