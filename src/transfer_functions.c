@@ -1,7 +1,5 @@
 #include "transfer_functions.h"
 
-#include "adc.h"
-
 #define ACCEL_1_LOWER_BOUND 246
 #define ACCEL_1_UPPER_BOUND 885
 #define ACCEL_2_LOWER_BOUND 246

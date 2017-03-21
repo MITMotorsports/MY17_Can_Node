@@ -5,6 +5,16 @@
 #include <stdbool.h>
 
 typedef struct ADC_INPUT {
+  uint16_t accel_1_raw;
+  uint16_t accel_2_raw;
+  uint16_t brake_1_raw;
+  uint16_t brake_2_raw;
+  uint16_t steering_raw;
+  uint32_t lastUpdate_ms;
+  uint32_t msTicks;
+} ADC_INPUT_T;
+
+typedef struct ADC_STATE {
   // steering_val is an integer ranging from [0:1000] representing degree of
   // steering travel, where 0 is fully right and 1000 is fully left.
   uint16_t steering_travel;
@@ -19,11 +29,6 @@ typedef struct ADC_INPUT {
   uint16_t brake_1_travel;
   uint16_t brake_2_travel;
 
-  uint32_t lastUpdate_ms;
-  uint32_t msTicks;
-} ADC_INPUT_T;
-
-typedef struct ADC_STATE {
   // has_conflict is a boolean that is true iff the driver has violated EV2.5
   // and has not yet restored the throttle to less than 5% of pedal travel
   // (EV2.5.1). Note that for this flag we use the lowest reported pedal travel.
@@ -49,6 +54,8 @@ typedef struct ADC_STATE {
   // indicate that a CAN message should be sent immediately, rather than
   // waiting for the next scheduled sending.
   bool urgent_message;
+
+  uint32_t msTicks;
 } ADC_STATE_T;
 
 typedef struct ADC_OUTPUT {

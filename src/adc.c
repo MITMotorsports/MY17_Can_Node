@@ -5,8 +5,10 @@
 #include <string.h>
 
 #include "chip.h"
+#include "transfer_functions.h"
 
 static ADC_CLOCK_SETUP_T adc_setup;
+#define ADC_UPDATE_PERIOD_MS 10
 
 void ADC_Init() {
   const uint32_t ADC_PIN_CONFIG = IOCON_FUNC2 | IOCON_MODE_INACT | IOCON_ADMODE_EN;
@@ -54,3 +56,14 @@ uint8_t ADC_Read_Byte(ADC_CHANNEL_T channel) {
   return eight_bit_val;
 }
 
+void update_adc_inputs(ADC_INPUT_T *adc_input) {
+  uint32_t nextUpdate_ms = adc_input->lastUpdate_ms + ADC_UPDATE_PERIOD_MS;
+  if (adc_input->msTicks >= nextUpdate_ms) {
+    adc_input->accel_1_raw = ADC_Read(ACCEL_1_CHANNEL);
+    adc_input->accel_2_raw = ADC_Read(ACCEL_2_CHANNEL);
+    adc_input->brake_1_raw = ADC_Read(BRAKE_1_CHANNEL);
+    adc_input->brake_2_raw = ADC_Read(BRAKE_2_CHANNEL);
+    adc_input->steering_raw = ADC_Read(STEERING_CHANNEL);
+    adc_input->lastUpdate_ms = adc_input->msTicks;
+  }
+}

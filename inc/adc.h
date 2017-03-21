@@ -2,6 +2,7 @@
 #define ADC_H
 
 #include "chip.h"
+#include "state_types.h"
 
 #define STEERING_CHANNEL ADC_CH0
 #define ACCEL_1_CHANNEL ADC_CH2
@@ -23,5 +24,6 @@ void ADC_Init();
 
 uint16_t ADC_Read(ADC_CHANNEL_T channel);
 uint8_t ADC_Read_Byte(ADC_CHANNEL_T channel);
+void update_adc_inputs(ADC_INPUT_T *adc_inputs);
 
 #endif //ADC_H

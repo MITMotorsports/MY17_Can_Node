@@ -38,19 +38,25 @@ void SysTick_Handler(void) {
 }
 
 void Init_ADC_Structs(void) {
-  adc_input.steering_travel = 0;
-  adc_input.accel_1_travel = 0;
-  adc_input.accel_2_travel = 0;
-  adc_input.brake_1_travel = 0;
-  adc_input.brake_2_travel = 0;
+  adc_input.steering_raw = 0;
+  adc_input.accel_1_raw = 0;
+  adc_input.accel_2_raw = 0;
+  adc_input.brake_1_raw = 0;
+  adc_input.brake_2_raw = 0;
   adc_input.lastUpdate_ms = 0;
   adc_input.msTicks = msTicks;
 
+  adc_state.steering_travel = 0;
+  adc_state.accel_1_travel = 0;
+  adc_state.accel_2_travel = 0;
+  adc_state.brake_1_travel = 0;
+  adc_state.brake_2_travel = 0;
   adc_state.has_conflict = false;
   adc_state.implausibility_observed = false;
   adc_state.implausibility_time_ms = 0;
   adc_state.implausibility_reported = false;
   adc_state.urgent_message = false;
+  adc_state.msTicks = msTicks;
 
   adc_output.requested_torque = 0;
   adc_output.brake_pressure = 0;
@@ -122,7 +128,7 @@ void update_state() {
 void handle_outputs(void) {
   if (msTicks - lastAdcMessage_ms > ADC_MESSAGE_PERIOD_MS) {
     lastAdcMessage_ms = msTicks;
-    update_adc_outputs(&adc_input, &adc_state, &adc_output);
+    update_adc_outputs(&adc_state, &adc_output);
     send_adc_message(&adc_output);
   }
   if (msTicks - lastRpmMessage_ms > RPM_MESSAGE_PERIOD_MS) {
