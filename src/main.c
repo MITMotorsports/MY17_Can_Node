@@ -57,15 +57,15 @@ void TIMER32_1_IRQHandler(void) {
 }
 
 void Initalize_Global_Variables(void) {
-    wheel_1_clock_cycles_between_ticks = 0;
-    wheel_2_clock_cycles_between_ticks = 0;
+  wheel_1_clock_cycles_between_ticks = 0;
+  wheel_2_clock_cycles_between_ticks = 0;
 }
 
 void Set_Interrupt_Priorities(void) {
 	/* Give 32 bit timer capture interrupts the highest priority */
-    NVIC_SetPriority(TIMER_32_0_IRQn, 0);
-    NVIC_SetPriority(TIMER_32_1_IRQn, 1);
-    /* Give the SysTick function a lower priority */
+  NVIC_SetPriority(TIMER_32_0_IRQn, 0);
+  NVIC_SetPriority(TIMER_32_1_IRQn, 1);
+  /* Give the SysTick function a lower priority */
 	NVIC_SetPriority(SysTick_IRQn, 2);	
 }
 
@@ -75,10 +75,6 @@ void Init_ADC_Structs(void) {
   adc_input.accel_2_raw = 0;
   adc_input.brake_1_raw = 0;
   adc_input.brake_2_raw = 0;
-  adc_input.wheel_1_clock_cycles_between_ticks = 0; 
-  adc_input.wheel_2_clock_cycles_between_ticks = 0;
-  // TODO: should these be initialized to zero? Zero clock cycles between ticks would
-  // imply the car is going at infinite velocity
   adc_input.lastUpdate_ms = 0;
   adc_input.msTicks = msTicks;
 
