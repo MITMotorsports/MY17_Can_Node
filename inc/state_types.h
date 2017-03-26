@@ -13,11 +13,6 @@ typedef struct ADC_INPUT {
   uint16_t brake_2_raw;
   uint16_t steering_raw;
 
-  // integers in [0:4294967296] representing the number of clock cycles between
-  // ticks from wheel speed sensors
-  uint32_t wheel_1_clock_cycles_between_ticks;
-  uint32_t wheel_2_clock_cycles_between_ticks;
-
   // TODO consider moving timing logic out of this struct.
 
   // Time in ms that the ADC peripheral was last read from.
