@@ -45,15 +45,15 @@ void SysTick_Handler(void) {
 }
 
 void TIMER32_0_IRQHandler(void) {
-	Chip_TIMER_Reset(LPC_TIMER32_0);		        /* Reset the timer immediately */
-	Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);	    /* Clear the capture */
-	wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+  Chip_TIMER_Reset(LPC_TIMER32_0);		        /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);	    /* Clear the capture */
+  wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
 }
 
 void TIMER32_1_IRQHandler(void) {
-	Chip_TIMER_Reset(LPC_TIMER32_1);		        /* Reset the timer immediately */
-	Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);	    /* Clear the capture */
-	wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+  Chip_TIMER_Reset(LPC_TIMER32_1);		        /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);	    /* Clear the capture */
+  wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
 }
 
 void Initalize_Global_Variables(void) {
@@ -62,11 +62,11 @@ void Initalize_Global_Variables(void) {
 }
 
 void Set_Interrupt_Priorities(void) {
-	/* Give 32 bit timer capture interrupts the highest priority */
+  /* Give 32 bit timer capture interrupts the highest priority */
   NVIC_SetPriority(TIMER_32_0_IRQn, 0);
   NVIC_SetPriority(TIMER_32_1_IRQn, 1);
   /* Give the SysTick function a lower priority */
-	NVIC_SetPriority(SysTick_IRQn, 2);	
+  NVIC_SetPriority(SysTick_IRQn, 2);	
 }
 
 void Init_ADC_Structs(void) {
