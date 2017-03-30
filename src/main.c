@@ -44,12 +44,16 @@ void SysTick_Handler(void) {
   msTicks++;
 }
 
+// Interrupt handler for timer 0 capture pin. This function get called automatically on 
+// a rising edge of the signal going into the timer capture pin
 void TIMER32_0_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_0);		        /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);	    /* Clear the capture */
   wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
 }
 
+// Interrupt handler for timer 1 capture pin. This function get called automatically on 
+// a rising edge of the signal going into the timer capture pin
 void TIMER32_1_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_1);		        /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);	    /* Clear the capture */
