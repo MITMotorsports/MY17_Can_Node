@@ -8,6 +8,7 @@
 #include "state.h"
 #include "serial.h"
 #include "transfer_functions.h"
+#include "timer.h"
 
 /*****************************************************************************
  * Private types/enumerations/variables
@@ -19,6 +20,11 @@ const uint32_t OscRateIn = 12000000;
 #define CAN_BAUDRATE 500000
 
 volatile uint32_t msTicks;
+
+// integers in [0:4294967296] representing the number of clock cycles between
+// ticks from wheel speed sensors
+volatile uint32_t wheel_1_clock_cycles_between_ticks;
+volatile uint32_t wheel_2_clock_cycles_between_ticks;
 
 const uint32_t ADC_MESSAGE_PERIOD_MS = 1000 / FRONT_CAN_NODE_ANALOG_SENSORS__freq;
 const uint32_t RPM_MESSAGE_PERIOD_MS = 1000 / FRONT_CAN_NODE_WHEEL_SPEED__freq;
@@ -36,6 +42,31 @@ static ADC_OUTPUT_T adc_output;
 
 void SysTick_Handler(void) {
   msTicks++;
+}
+
+void TIMER32_0_IRQHandler(void) {
+  Chip_TIMER_Reset(LPC_TIMER32_0);		        /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);	    /* Clear the capture */
+  wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+}
+
+void TIMER32_1_IRQHandler(void) {
+  Chip_TIMER_Reset(LPC_TIMER32_1);		        /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);	    /* Clear the capture */
+  wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+}
+
+void Initalize_Global_Variables(void) {
+  wheel_1_clock_cycles_between_ticks = 0;
+  wheel_2_clock_cycles_between_ticks = 0;
+}
+
+void Set_Interrupt_Priorities(void) {
+  /* Give 32 bit timer capture interrupts the highest priority */
+  NVIC_SetPriority(TIMER_32_0_IRQn, 0);
+  NVIC_SetPriority(TIMER_32_1_IRQn, 1);
+  /* Give the SysTick function a lower priority */
+  NVIC_SetPriority(SysTick_IRQn, 2);	
 }
 
 void Init_ADC_Structs(void) {
@@ -149,9 +180,16 @@ int main(void) {
     while(1);
   }
 
+  Initalize_Global_Variables();
+  Init_ADC_Structs();
   Serial_Init(SERIAL_BAUDRATE);
   CAN_Init(CAN_BAUDRATE);
   ADC_Init();
+  Timer_Init();
+
+  Set_Interrupt_Priorities();
+
+  Timer_Start();
 
   Serial_Println("Started up");
 
