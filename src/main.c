@@ -16,7 +16,7 @@
 
 const uint32_t OscRateIn = 12000000;
 
-#define SERIAL_BAUDRATE 115200
+#define SERIAL_BAUDRATE 57600
 #define CAN_BAUDRATE 500000
 
 volatile uint32_t msTicks;
