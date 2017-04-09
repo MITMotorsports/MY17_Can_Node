@@ -25,15 +25,15 @@ void read_input(ADC_INPUT_T *adc_input, ADC_STATE_T *adc_state) {
   adc_state->msTicks = adc_input->msTicks;
 }
 
-void observe_plausibility(ADC_STATE_T *adc_state) {
-  bool has_implausibility = check_plausibility(adc_state->accel_1_travel, adc_state->accel_2_travel);
+void observe_implausibility(ADC_STATE_T *adc_state) {
+  bool has_implausibility = check_implausibility(adc_state->accel_1_travel, adc_state->accel_2_travel);
   if (has_implausibility && !adc_state->implausibility_observed) {
     adc_state->implausibility_time_ms = adc_state->msTicks;
   }
   adc_state->implausibility_observed = has_implausibility;
 }
 
-void report_plausibility(ADC_STATE_T *adc_state) {
+void report_implausibility(ADC_STATE_T *adc_state) {
   uint32_t time_since_implausibility_observed =
       adc_state->msTicks - adc_state->implausibility_time_ms;
 
@@ -83,8 +83,8 @@ void check_conflict(ADC_STATE_T *adc_state) {
   }
 }
 
-bool check_plausibility(uint16_t accel_1_travel, uint16_t accel_2_travel) {
+bool check_implausibility(uint16_t accel_1_travel, uint16_t accel_2_travel) {
   uint16_t max_travel = max(accel_1_travel, accel_2_travel);
   uint16_t min_travel = min(accel_1_travel, accel_2_travel);
-  return max_travel - min_travel < IMPLAUSIBILITY_THROTTLE_TRAVEL;
+  return max_travel - min_travel >= IMPLAUSIBILITY_THROTTLE_TRAVEL;
 }

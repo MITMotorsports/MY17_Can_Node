@@ -28,7 +28,7 @@ void read_input(ADC_INPUT_T *adc_input, ADC_STATE_T *adc_state);
  *    readings are plausible. If implausible, adc_state also contains the time
  *    that the current implausibility was first observed.
  */
-void observe_plausibility(ADC_STATE_T *adc_state);
+void observe_implausibility(ADC_STATE_T *adc_state);
 
 /**
  * Examines whether there is an implausibility as well as the time that it was
@@ -41,7 +41,7 @@ void observe_plausibility(ADC_STATE_T *adc_state);
  * @effect: adc_state contains a flag indicating whether or not the system
  *    should report an implausibility.
  */
-void report_plausibility(ADC_STATE_T *adc_state);
+void report_implausibility(ADC_STATE_T *adc_state);
 
 /**
  * Examines relative position of brake and accelerator and decides whether or
@@ -69,6 +69,6 @@ void check_conflict(ADC_STATE_T *adc_output);
  *    observed by the other throttle potentiometer.
  * @return true iff accel_1_val and accel_2_val are plausible.
  */
-bool check_plausibility(uint16_t accel_1_val, uint16_t accel_2_val);
+bool check_implausibility(uint16_t accel_1_val, uint16_t accel_2_val);
 
 #endif // STATE_H

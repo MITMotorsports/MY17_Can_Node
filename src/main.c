@@ -1,15 +1,15 @@
 #include "chip.h"
-#include "can.h"
-#include "ccand_11xx.h"
+// #include "can.h"
+// #include "ccand_11xx.h"
 
 #include "adc.h"
-#include "can_constants.h"
 #include "output.h"
 #include "state.h"
 #include "serial.h"
 #include "transfer_functions.h"
 #include "timer.h"
 
+#include "MY17_Can_Library.h"
 /*****************************************************************************
  * Private types/enumerations/variables
  ****************************************************************************/
@@ -118,17 +118,18 @@ void Init_ADC_Structs(void) {
  * @details reads incoming CAN messages and prints information to the terminal
  */
 void update_can_inputs(void) {	
-  CCAN_MSG_OBJ_T rx_msg;
-  CAN_ERROR_T ret = CAN_Receive(&rx_msg);
-
-  if (ret == NO_CAN_ERROR) {
-    Serial_Print("CAN_rcv, id=");
-    Serial_PrintlnNumber(rx_msg.mode_id, 10);
-  } else if (ret != NO_RX_CAN_MESSAGE) {
-    Serial_Println("CAN error state reached on receive attempt:");
-    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
-    Serial_Println("Attempting CAN peripheral reset to clear error...");
-    CAN_ResetPeripheral();
+  Can_MsgID_T nextMsg = Can_MsgType();
+  if (nextMsg == Can_No_Msg) {
+    return;
+  } else {
+    Frame msg;
+    bool ok = Can_RawRead(&msg);
+    if (ok) {
+      Serial_Print("CAN_rcv, id=");
+      Serial_PrintlnNumber(msg.id, 10);
+    } else {
+      Serial_Println("Can Error");
+    }
   }
 }
 
@@ -142,69 +143,30 @@ void update_can_inputs(void) {
 #define CHECK(a,b) (((a) & (1<<(7- (b)))) != 0)
 
 void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
-  const uint32_t can_out_id = FRONT_CAN_NODE_ANALOG_SENSORS__id;
-  const uint8_t requested_torque_low = 0;
-  const uint8_t requested_torque_high = 1;
-  const uint8_t brake_pressure_idx = 2;
-  const uint8_t steering_position_idx = 3;
-  const uint8_t flag_idx = 4;
+  Can_FrontCanNode_DriverOutput_T msg;
 
-  // 5 bytes out
-  uint8_t data[5] = {0};
+  msg.torque = adc_output->requested_torque;
+  msg.brake_pressure = adc_output->brake_pressure;
+  msg.steering_position = adc_output->steering_position;
+  msg.throttle_implausible = adc_output->throttle_implausible;
+  msg.brake_throttle_conflict = adc_output->brake_throttle_conflict;
 
-  data[requested_torque_low] = adc_output->requested_torque & 0xFF;
-  data[requested_torque_high] = (adc_output->requested_torque & 0xFF00) >> 8;
-  data[brake_pressure_idx] = adc_output->brake_pressure;
-  data[steering_position_idx] = adc_output->steering_position;
-  TOGGLE(data[flag_idx], adc_output->throttle_implausible, 0);
-  TOGGLE(data[flag_idx], adc_output->brake_throttle_conflict, 1);
-
-  uint32_t ret = CAN_Transmit(can_out_id, data, 5);
-  if (ret != NO_CAN_ERROR) {
-    Serial_Println("CAN error state reached on write attempt:");
-    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
-    Serial_Println("Attempting CAN peripheral reset to clear error...");
-    CAN_ResetPeripheral();
+  if (msg.throttle_implausible) {
+    Serial_Print("Implausible ");
+    Serial_PrintlnNumber(msTicks, 10);
   }
+  Can_FrontCanNode_DriverOutput_Write(&msg);
 }
 
 void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
-  /* const uint32_t can_out_id = 0x230; */
+  Can_FrontCanNode_RawValues_T msg;
 
-  #define LENGTH 8
+  msg.accel_1_raw = adc_output->accel_1_raw;
+  msg.accel_2_raw = adc_output->accel_2_raw;
+  msg.brake_1_raw = adc_output->brake_1_raw;
+  msg.brake_2_raw = adc_output->brake_2_raw;
 
-  const uint32_t can_out_id = 0x230;
-  uint8_t data[LENGTH] = {0};
-  data[0] = adc_output->accel_1_raw & 0xFF;
-  data[1] = (adc_output->accel_1_raw & 0xFF00) >> 8;
-  data[2] = adc_output->accel_2_raw & 0xFF;
-  data[3] = (adc_output->accel_2_raw & 0xFF00) >> 8;
-  data[4] = adc_output->brake_1_raw & 0xFF;
-  data[5] = (adc_output->brake_1_raw & 0xFF00) >> 8;
-  data[6] = adc_output->brake_2_raw & 0xFF;
-  data[7] = (adc_output->brake_2_raw & 0xFF00) >> 8;
-
-  Serial_PrintNumber(adc_output->accel_1_raw, 10);
-  Serial_Print(", ");
-  Serial_PrintNumber(adc_output->accel_2_raw, 10);
-  Serial_Print(", ");
-  Serial_PrintNumber(adc_output->brake_1_raw, 10);
-  Serial_Print(", ");
-  Serial_PrintNumber(adc_output->brake_2_raw, 10);
-  Serial_Print(", ");
-  Serial_PrintNumber(adc_output->steering_raw, 10);
-  Serial_Println("");
-
-  uint32_t ret = CAN_Transmit(can_out_id, data, LENGTH);
-  if (ret != NO_CAN_ERROR) {
-    Serial_Println("CAN error state reached on write attempt:");
-    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
-    Serial_Println("Attempting CAN peripheral reset to clear error...");
-    CAN_ResetPeripheral();
-  }
-
-  #undef LENGTH
-
+  Can_FrontCanNode_RawValues_Write(&msg);
 }
 
 void send_rpm_message(void) {
@@ -222,8 +184,8 @@ void handle_inputs(void) {
 
 void update_state(void) {
   read_input(&adc_input, &adc_state);
-  observe_plausibility(&adc_state);
-  report_plausibility(&adc_state);
+  observe_implausibility(&adc_state);
+  report_implausibility(&adc_state);
   check_conflict(&adc_state);
 }
 
@@ -262,7 +224,7 @@ int main(void) {
   Initalize_Global_Variables();
   Init_ADC_Structs();
   Serial_Init(SERIAL_BAUDRATE);
-  CAN_Init(CAN_BAUDRATE);
+  Can_Init(CAN_BAUDRATE);
   ADC_Init();
   Timer_Init();
 
