@@ -16,7 +16,7 @@
 
 const uint32_t OscRateIn = 12000000;
 
-#define SERIAL_BAUDRATE 57600
+#define SERIAL_BAUDRATE 115200
 #define CAN_BAUDRATE 500000
 
 volatile uint32_t msTicks;
@@ -26,10 +26,13 @@ volatile uint32_t msTicks;
 volatile uint32_t wheel_1_clock_cycles_between_ticks;
 volatile uint32_t wheel_2_clock_cycles_between_ticks;
 
-const uint32_t ADC_MESSAGE_PERIOD_MS = 1000 / FRONT_CAN_NODE_ANALOG_SENSORS__freq;
-const uint32_t RPM_MESSAGE_PERIOD_MS = 1000 / FRONT_CAN_NODE_WHEEL_SPEED__freq;
+const uint32_t DRIVER_OUTPUT_MESSAGE_PERIOD_MS = 20;
+const uint32_t RPM_MESSAGE_PERIOD_MS = 20;
 
-uint32_t lastAdcMessage_ms = 0;
+const uint32_t RAW_VALUES_MESSAGE_PERIOD_MS = 100;
+
+uint32_t lastRawValuesMessage_ms = 0;
+uint32_t lastDriverOutputMessage_ms = 0;
 uint32_t lastRpmMessage_ms = 0;
 
 static ADC_INPUT_T adc_input;
@@ -82,6 +85,11 @@ void Init_ADC_Structs(void) {
   adc_input.lastUpdate_ms = 0;
   adc_input.msTicks = msTicks;
 
+  adc_state.steering_raw = 0;
+  adc_state.accel_1_raw = 0;
+  adc_state.accel_2_raw = 0;
+  adc_state.brake_1_raw = 0;
+  adc_state.brake_2_raw = 0;
   adc_state.steering_travel = 0;
   adc_state.accel_1_travel = 0;
   adc_state.accel_2_travel = 0;
@@ -94,9 +102,16 @@ void Init_ADC_Structs(void) {
   adc_state.urgent_message = false;
   adc_state.msTicks = msTicks;
 
+  adc_output.steering_raw = 0;
+  adc_output.accel_1_raw = 0;
+  adc_output.accel_2_raw = 0;
+  adc_output.brake_1_raw = 0;
+  adc_output.brake_2_raw = 0;
   adc_output.requested_torque = 0;
   adc_output.brake_pressure = 0;
   adc_output.steering_position = 0;
+  adc_output.throttle_implausible = false;
+  adc_output.brake_throttle_conflict = false;
 }
 
 /**
@@ -117,27 +132,78 @@ void update_can_inputs(void) {
   }
 }
 
-void send_adc_message(ADC_OUTPUT_T *adc_output) {
+#define TOGGLE(input, test, idx) \
+  if (test) {\
+    ((input) |= (1 << (7 - (idx)))); \
+  } else { \
+    ((input) &= ~(1 << (7 - (idx)))); \
+  } \
 
+#define CHECK(a,b) (((a) & (1<<(7- (b)))) != 0)
+
+void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   const uint32_t can_out_id = FRONT_CAN_NODE_ANALOG_SENSORS__id;
-  const uint8_t requested_torque_idx = 0;
-  const uint8_t brake_pressure_idx = 1;
-  const uint8_t steering_position_idx = 2;
+  const uint8_t requested_torque_low = 0;
+  const uint8_t requested_torque_high = 1;
+  const uint8_t brake_pressure_idx = 2;
+  const uint8_t steering_position_idx = 3;
+  const uint8_t flag_idx = 4;
 
-  const uint8_t can_out_bytes = 3;
-  uint8_t data[can_out_bytes];
+  // 5 bytes out
+  uint8_t data[5] = {0};
 
-  data[requested_torque_idx] = adc_output->requested_torque;
+  data[requested_torque_low] = adc_output->requested_torque & 0xFF;
+  data[requested_torque_high] = (adc_output->requested_torque & 0xFF00) >> 8;
   data[brake_pressure_idx] = adc_output->brake_pressure;
   data[steering_position_idx] = adc_output->steering_position;
+  TOGGLE(data[flag_idx], adc_output->throttle_implausible, 0);
+  TOGGLE(data[flag_idx], adc_output->brake_throttle_conflict, 1);
 
-  uint32_t ret = CAN_Transmit(can_out_id, data, can_out_bytes);
+  uint32_t ret = CAN_Transmit(can_out_id, data, 5);
   if (ret != NO_CAN_ERROR) {
     Serial_Println("CAN error state reached on write attempt:");
     Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
     Serial_Println("Attempting CAN peripheral reset to clear error...");
     CAN_ResetPeripheral();
   }
+}
+
+void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
+  /* const uint32_t can_out_id = 0x230; */
+
+  #define LENGTH 8
+
+  const uint32_t can_out_id = 0x230;
+  uint8_t data[LENGTH] = {0};
+  data[0] = adc_output->accel_1_raw & 0xFF;
+  data[1] = (adc_output->accel_1_raw & 0xFF00) >> 8;
+  data[2] = adc_output->accel_2_raw & 0xFF;
+  data[3] = (adc_output->accel_2_raw & 0xFF00) >> 8;
+  data[4] = adc_output->brake_1_raw & 0xFF;
+  data[5] = (adc_output->brake_1_raw & 0xFF00) >> 8;
+  data[6] = adc_output->brake_2_raw & 0xFF;
+  data[7] = (adc_output->brake_2_raw & 0xFF00) >> 8;
+
+  Serial_PrintNumber(adc_output->accel_1_raw, 10);
+  Serial_Print(", ");
+  Serial_PrintNumber(adc_output->accel_2_raw, 10);
+  Serial_Print(", ");
+  Serial_PrintNumber(adc_output->brake_1_raw, 10);
+  Serial_Print(", ");
+  Serial_PrintNumber(adc_output->brake_2_raw, 10);
+  Serial_Print(", ");
+  Serial_PrintNumber(adc_output->steering_raw, 10);
+  Serial_Println("");
+
+  uint32_t ret = CAN_Transmit(can_out_id, data, LENGTH);
+  if (ret != NO_CAN_ERROR) {
+    Serial_Println("CAN error state reached on write attempt:");
+    Serial_PrintlnNumber(CAN_GetErrorStatus(), 10);
+    Serial_Println("Attempting CAN peripheral reset to clear error...");
+    CAN_ResetPeripheral();
+  }
+
+  #undef LENGTH
 
 }
 
@@ -149,6 +215,7 @@ void send_rpm_message(void) {
  * Receives CAN messages and reads ADCs
  */
 void handle_inputs(void) {
+  adc_input.msTicks = msTicks;
   update_can_inputs();
   update_adc_inputs(&adc_input);
 }
@@ -164,15 +231,23 @@ void update_state(void) {
  * Transmits CAN messages
  */
 void handle_outputs(void) {
-  if (msTicks - lastAdcMessage_ms > ADC_MESSAGE_PERIOD_MS) {
-    lastAdcMessage_ms = msTicks;
-    update_adc_outputs(&adc_state, &adc_output);
-    send_adc_message(&adc_output);
+  update_adc_outputs(&adc_state, &adc_output);
+
+  if (msTicks - lastDriverOutputMessage_ms > DRIVER_OUTPUT_MESSAGE_PERIOD_MS) {
+    lastDriverOutputMessage_ms = msTicks;
+    send_driver_output_message(&adc_output);
   }
+
+  if (msTicks - lastRawValuesMessage_ms > RAW_VALUES_MESSAGE_PERIOD_MS) {
+    lastRawValuesMessage_ms = msTicks;
+    send_raw_values_message(&adc_output);
+  }
+
   if (msTicks - lastRpmMessage_ms > RPM_MESSAGE_PERIOD_MS) {
     lastRpmMessage_ms = msTicks;
     send_rpm_message();
   }
+
 }
 
 int main(void) {

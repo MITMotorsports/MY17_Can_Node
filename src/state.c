@@ -10,11 +10,18 @@
 #define CONFLICT_END_THROTTLE_TRAVEL 50
 
 void read_input(ADC_INPUT_T *adc_input, ADC_STATE_T *adc_state) {
+  adc_state->accel_1_raw = adc_input->accel_1_raw;
+  adc_state->accel_2_raw = adc_input->accel_2_raw;
+  adc_state->brake_1_raw = adc_input->brake_1_raw;
+  adc_state->brake_2_raw = adc_input->brake_2_raw;
+  adc_state->steering_raw = adc_input->steering_raw;
+
   adc_state->accel_1_travel = accel_1_transfer_fn(adc_input->accel_1_raw);
   adc_state->accel_2_travel = accel_2_transfer_fn(adc_input->accel_2_raw);
   adc_state->brake_1_travel = brake_1_transfer_fn(adc_input->brake_1_raw);
   adc_state->brake_2_travel = brake_2_transfer_fn(adc_input->brake_2_raw);
   adc_state->steering_travel = steering_transfer_fn(adc_input->steering_raw);
+
   adc_state->msTicks = adc_input->msTicks;
 }
 

@@ -22,6 +22,14 @@ typedef struct ADC_INPUT {
 } ADC_INPUT_T;
 
 typedef struct ADC_STATE {
+
+  // Copies of values for driver out
+  uint16_t accel_1_raw;
+  uint16_t accel_2_raw;
+  uint16_t brake_1_raw;
+  uint16_t brake_2_raw;
+  uint16_t steering_raw;
+
   // steering_val is an integer ranging from [0:1000] representing degree of
   // steering travel, where 0 is fully right and 1000 is fully left.
   uint16_t steering_travel;
@@ -69,6 +77,13 @@ typedef struct ADC_STATE {
 } ADC_STATE_T;
 
 typedef struct ADC_OUTPUT {
+
+  uint16_t accel_1_raw;
+  uint16_t accel_2_raw;
+  uint16_t brake_1_raw;
+  uint16_t brake_2_raw;
+  uint16_t steering_raw;
+
   // Amount of torque that the CAN node decides to output in [-32768:32767]
   // TODO decide endian-ness and whether we will clamp this.
   int16_t requested_torque;
@@ -78,6 +93,9 @@ typedef struct ADC_OUTPUT {
 
   // Steering position in [0:255] with 0 being fully right.
   uint8_t steering_position;
+
+  bool throttle_implausible;
+  bool brake_throttle_conflict;
 } ADC_OUTPUT_T;
 
 #endif
