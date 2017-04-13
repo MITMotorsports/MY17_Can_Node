@@ -22,6 +22,9 @@ uint32_t Serial_Print(const char *str) {
   return Chip_UART_SendBlocking(LPC_USART, str, strlen(str));
 }
 
+void Serial_Print_Void(const char *str) {
+  Chip_UART_SendBlocking(LPC_USART, str, strlen(str));
+}
 uint32_t Serial_Println(const char *str) {
   uint32_t count = Serial_Print(str);
   return count + Serial_Print("\r\n");
