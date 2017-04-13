@@ -54,7 +54,7 @@ AS_DEFS = -D__STARTUP_CLEAR_BSS -D__START=main
 
 # include directories (absolute or relative paths to additional folders with
 # headers, current folder is always included)
-INC_DIRS_CROSS = inc/ ../lpc11cx4-library/lpc_chip_11cxx_lib/inc ../lpc11cx4-library/evt_lib/inc/ ../../MY17/lib/MY17_Can_Library ../../MY17/lib/MY17_Can_Library/can_validator
+INC_DIRS_CROSS = inc/ ../lpc11cx4-library/lpc_chip_11cxx_lib/inc ../lpc11cx4-library/evt_lib/inc/ ../MY17/lib/MY17_Can_Library
 
 # library directories (absolute or relative paths to additional folders with
 # libraries)
@@ -66,7 +66,7 @@ LIBS =
 
 # additional directories with source files (absolute or relative paths to
 # folders with source files, current folder is always included)
-SRCS_DIRS = ../lpc11cx4-library/lpc_chip_11cxx_lib/src ../lpc11cx4-library/evt_lib/src/ src/ ../../MY17/lib/MY17_Can_Library ../../MY17/lib/MY17_Can_Library/can_validator
+SRCS_DIRS = ../lpc11cx4-library/lpc_chip_11cxx_lib/src ../lpc11cx4-library/evt_lib/src/ src/ ../MY17/lib/MY17_Can_Library
 
 # extension of C files
 C_EXT = c
