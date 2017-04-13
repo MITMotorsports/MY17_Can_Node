@@ -10,6 +10,7 @@
 #include "timer.h"
 
 #include "MY17_Can_Library.h"
+#include "MY17_Can_Library_Test.h"
 /*****************************************************************************
  * Private types/enumerations/variables
  ****************************************************************************/
@@ -133,15 +134,6 @@ void update_can_inputs(void) {
   }
 }
 
-#define TOGGLE(input, test, idx) \
-  if (test) {\
-    ((input) |= (1 << (7 - (idx)))); \
-  } else { \
-    ((input) &= ~(1 << (7 - (idx)))); \
-  } \
-
-#define CHECK(a,b) (((a) & (1<<(7- (b)))) != 0)
-
 void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   Can_FrontCanNode_DriverOutput_T msg;
 
@@ -152,8 +144,8 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   msg.brake_throttle_conflict = adc_output->brake_throttle_conflict;
 
   if (msg.throttle_implausible) {
-    Serial_Print("Implausible ");
-    Serial_PrintlnNumber(msTicks, 10);
+    /* Serial_Print("Implausible "); */
+    /* Serial_PrintlnNumber(msTicks, 10); */
   }
   Can_FrontCanNode_DriverOutput_Write(&msg);
 }
@@ -166,6 +158,15 @@ void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
   msg.brake_1_raw = adc_output->brake_1_raw;
   msg.brake_2_raw = adc_output->brake_2_raw;
 
+  Serial_Print("accel_1: ");
+  Serial_PrintNumber(msg.accel_1_raw, 10);
+  Serial_Print(", accel_2: ");
+  Serial_PrintNumber(msg.accel_2_raw, 10);
+  Serial_Print(", brake_1: ");
+  Serial_PrintNumber(msg.brake_1_raw, 10);
+  Serial_Print(", brake_2: ");
+  Serial_PrintNumber(msg.brake_2_raw, 10);
+  Serial_Println("");
   Can_FrontCanNode_RawValues_Write(&msg);
 }
 
@@ -233,6 +234,18 @@ int main(void) {
   Timer_Start();
 
   Serial_Println("Started up");
+
+  Serial_Println("\n*********TEST RESULTS **************\n\n");
+  Can_FrontCanNode_DriverOutput_Test(Serial_Print_Void);
+  Can_FrontCanNode_RawValues_Test(Serial_Print_Void);
+  Can_FrontCanNode_WheelSpeed_Test(Serial_Print_Void);
+  Can_Vcu_BmsHeartbeat_Test(Serial_Print_Void);
+  Can_Vcu_DashHeartbeat_Test(Serial_Print_Void);
+  Can_Vcu_MCRequest_Test(Serial_Print_Void);
+  Can_Bms_Heartbeat_Test(Serial_Print_Void);
+  Can_Bms_CellTemps_Test(Serial_Print_Void);
+  Can_Bms_PackStatus_Test(Serial_Print_Void);
+  Can_Bms_Error_Test(Serial_Print_Void);
 
   while (1) {
     handle_inputs();
