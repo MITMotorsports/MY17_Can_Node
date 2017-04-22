@@ -119,7 +119,6 @@ void Init_ADC_Structs(void) {
  * @details reads incoming CAN messages and prints information to the terminal
  */
 void update_can_inputs(void) {	
-  Can_Pass();
   Can_MsgID_T nextMsg = Can_MsgType();
   if (nextMsg == Can_No_Msg) {
     return;
