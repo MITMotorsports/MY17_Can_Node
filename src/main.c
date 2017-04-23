@@ -126,8 +126,8 @@ void update_can_inputs(void) {
     Frame msg;
     bool ok = Can_RawRead(&msg);
     if (ok) {
-      Serial_Print("CAN_rcv, id=");
-      Serial_PrintlnNumber(msg.id, 10);
+      /* Serial_Print("CAN_rcv, id="); */
+      /* Serial_PrintlnNumber(msg.id, 10); */
     } else {
       Serial_Println("Can Error");
     }
@@ -156,7 +156,11 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   /* Serial_Print(", brake_conflict: "); */
   /* Serial_Print(msg.brake_throttle_conflict ? "true" : "false"); */
   /* Serial_Println(""); */
-  Can_FrontCanNode_DriverOutput_Write(&msg);
+  Can_ErrorID_T result = Can_FrontCanNode_DriverOutput_Write(&msg);
+  if (result != CAN_ERROR_NONE) {
+    Serial_Print("driver_write_err: ");
+    Serial_PrintlnNumber(result, 16);
+  }
 }
 
 void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
@@ -176,7 +180,11 @@ void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
   /* Serial_Print(", brake_2: "); */
   /* Serial_PrintNumber(msg.brake_2_raw, 10); */
   /* Serial_Println(""); */
-  Can_FrontCanNode_RawValues_Write(&msg);
+  Can_ErrorID_T result = Can_FrontCanNode_RawValues_Write(&msg);
+  if (result != CAN_ERROR_NONE) {
+    Serial_Print("driver_write_err: ");
+    Serial_PrintlnNumber(result, 16);
+  }
 }
 
 void send_rpm_message(void) {
@@ -243,18 +251,6 @@ int main(void) {
   Timer_Start();
 
   Serial_Println("Started up");
-
-  Serial_Println("\n*********TEST RESULTS **************\n\n");
-  Can_FrontCanNode_DriverOutput_Test(Serial_Print_Void);
-  Can_FrontCanNode_RawValues_Test(Serial_Print_Void);
-  Can_FrontCanNode_WheelSpeed_Test(Serial_Print_Void);
-  Can_Vcu_BmsHeartbeat_Test(Serial_Print_Void);
-  Can_Vcu_DashHeartbeat_Test(Serial_Print_Void);
-  Can_Vcu_MCRequest_Test(Serial_Print_Void);
-  Can_Bms_Heartbeat_Test(Serial_Print_Void);
-  Can_Bms_CellTemps_Test(Serial_Print_Void);
-  Can_Bms_PackStatus_Test(Serial_Print_Void);
-  Can_Bms_Error_Test(Serial_Print_Void);
 
   while (1) {
     handle_inputs();
