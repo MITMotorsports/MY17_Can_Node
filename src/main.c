@@ -124,8 +124,8 @@ void update_can_inputs(void) {
     return;
   } else {
     Frame msg;
-    bool ok = Can_RawRead(&msg);
-    if (ok) {
+    Can_ErrorID_T ok = Can_RawRead(&msg);
+    if (ok == CAN_ERROR_NONE) {
       /* Serial_Print("CAN_rcv, id="); */
       /* Serial_PrintlnNumber(msg.id, 10); */
     } else {
