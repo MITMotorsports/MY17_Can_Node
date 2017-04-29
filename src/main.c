@@ -9,6 +9,8 @@
 #include "transfer_functions.h"
 #include "timer.h"
 
+#include "can.h"
+
 #include "MY17_Can_Library.h"
 #include "MY17_Can_Library_Test.h"
 /*****************************************************************************
@@ -39,6 +41,8 @@ uint32_t lastRpmMessage_ms = 0;
 static ADC_INPUT_T adc_input;
 static ADC_STATE_T adc_state;
 static ADC_OUTPUT_T adc_output;
+
+static bool resettingPeripheral = false;
 
 /*****************************************************************************
  * Private function
@@ -124,12 +128,13 @@ void update_can_inputs(void) {
     return;
   } else {
     Frame msg;
-    Can_ErrorID_T ok = Can_RawRead(&msg);
+    Can_ErrorID_T ok = Can_UnknownRead(&msg);
     if (ok == CAN_ERROR_NONE) {
       /* Serial_Print("CAN_rcv, id="); */
       /* Serial_PrintlnNumber(msg.id, 10); */
     } else {
-      Serial_Println("Can Error");
+      Serial_Print("can_read_err: ");
+      Serial_PrintlnNumber(ok, 16);
     }
   }
 }
@@ -160,6 +165,14 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   if (result != CAN_ERROR_NONE) {
     Serial_Print("driver_write_err: ");
     Serial_PrintlnNumber(result, 16);
+    if (!resettingPeripheral) {
+      resettingPeripheral = true;
+      // TODO add this to CAN library
+      CAN_ResetPeripheral();
+      CAN_Init(500000);
+    }
+  } else {
+      resettingPeripheral = false;
   }
 }
 
@@ -182,8 +195,16 @@ void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
   /* Serial_Println(""); */
   Can_ErrorID_T result = Can_FrontCanNode_RawValues_Write(&msg);
   if (result != CAN_ERROR_NONE) {
-    Serial_Print("driver_write_err: ");
+    Serial_Print("raw_write_err: ");
     Serial_PrintlnNumber(result, 16);
+    if (!resettingPeripheral) {
+      resettingPeripheral = true;
+      // TODO add this to CAN library
+      CAN_ResetPeripheral();
+      CAN_Init(500000);
+    }
+  } else {
+      resettingPeripheral = false;
   }
 }
 
