@@ -3,6 +3,7 @@
 #include "common.h"
 #include "transfer_functions.h"
 
+#define TWO_BYTE_MAX 32767
 #define BYTE_MAX 255
 
 void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
@@ -19,7 +20,7 @@ void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
   bool should_zero =
       adc_state->has_conflict || adc_state->implausibility_reported;
 
-  adc_output->requested_torque = should_zero ? 0 : scale(pedal_travel, TRAVEL_MAX, BYTE_MAX);
+  adc_output->requested_torque = should_zero ? 0 : scale(pedal_travel, TRAVEL_MAX, TWO_BYTE_MAX);
   adc_output->brake_pressure = scale(brake_travel, TRAVEL_MAX, BYTE_MAX);
   adc_output->steering_position = scale(adc_state->steering_travel, TRAVEL_MAX, BYTE_MAX);
   adc_output->throttle_implausible = adc_state->implausibility_reported;
