@@ -2,10 +2,17 @@
 
 #include "common.h"
 
-#define ACCEL_1_LOWER_BOUND 100
-#define ACCEL_1_UPPER_BOUND 640
-#define ACCEL_2_LOWER_BOUND 72
+// TODO restore these once springs finished
+/* #define ACCEL_1_LOWER_BOUND 140 */
+/* #define ACCEL_1_UPPER_BOUND 690 */
+/* #define ACCEL_2_LOWER_BOUND 72 */
+/* #define ACCEL_2_UPPER_BOUND 350 */
+
+#define ACCEL_1_LOWER_BOUND 200
+#define ACCEL_1_UPPER_BOUND 690
+#define ACCEL_2_LOWER_BOUND 100
 #define ACCEL_2_UPPER_BOUND 350
+
 #define BRAKE_LOWER_BOUND 104
 #define BRAKE_UPPER_BOUND 900
 #define STEERING_POT_RIGHT_BOUND 275
