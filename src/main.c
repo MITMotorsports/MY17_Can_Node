@@ -126,16 +126,14 @@ void update_can_inputs(void) {
   Can_MsgID_T nextMsg = Can_MsgType();
   if (nextMsg == Can_No_Msg) {
     return;
+  } else if (nextMsg == Can_Error_Msg){
+    Can_ErrorID_T err = Can_Error_Read();
+    Serial_Print("can_read_err: ");
+    Serial_PrintlnNumber(err, 16);
   } else {
+    // TODO remove when masking is done, but for now we have to actually read
     Frame msg;
-    Can_ErrorID_T ok = Can_UnknownRead(&msg);
-    if (ok == CAN_ERROR_NONE) {
-      /* Serial_Print("CAN_rcv, id="); */
-      /* Serial_PrintlnNumber(msg.id, 10); */
-    } else {
-      Serial_Print("can_read_err: ");
-      Serial_PrintlnNumber(ok, 16);
-    }
+    Can_Unknown_Read(&msg);
   }
 }
 
