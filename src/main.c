@@ -141,24 +141,21 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   Can_FrontCanNode_DriverOutput_T msg;
 
   msg.torque = adc_output->requested_torque;
-
-  // TODO when we get brakes
-  // msg.brake_pressure = adc_output->brake_pressure;
-  msg.brake_pressure = 200;
+  msg.brake_pressure = adc_output->brake_pressure;
 
   msg.steering_position = adc_output->steering_position;
   msg.throttle_implausible = adc_output->throttle_implausible;
   msg.brake_throttle_conflict = adc_output->brake_throttle_conflict;
 
-  /* Serial_Print("torque: "); */
-  /* Serial_PrintNumber(msg.torque, 10); */
-  /* Serial_Print(", brake_pressure: "); */
-  /* Serial_PrintNumber(msg.brake_pressure, 10); */
-  /* Serial_Print(", throttle_implausible: "); */
-  /* Serial_Print(msg.throttle_implausible ? "true" : "false"); */
-  /* Serial_Print(", brake_conflict: "); */
-  /* Serial_Print(msg.brake_throttle_conflict ? "true" : "false"); */
-  /* Serial_Println(""); */
+  Serial_Print("torque: ");
+  Serial_PrintNumber(msg.torque, 10);
+  Serial_Print(", brake_pressure: ");
+  Serial_PrintNumber(msg.brake_pressure, 10);
+  Serial_Print(", throttle_implausible: ");
+  Serial_Print(msg.throttle_implausible ? "true" : "false");
+  Serial_Print(", brake_conflict: ");
+  Serial_Print(msg.brake_throttle_conflict ? "true" : "false");
+  Serial_Println("");
   Can_ErrorID_T result = Can_FrontCanNode_DriverOutput_Write(&msg);
   if (result != CAN_ERROR_NONE) {
     Serial_Print("driver_write_err: ");

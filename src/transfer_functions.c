@@ -13,8 +13,10 @@
 #define ACCEL_2_LOWER_BOUND 100
 #define ACCEL_2_UPPER_BOUND 350
 
-#define BRAKE_LOWER_BOUND 104
-#define BRAKE_UPPER_BOUND 900
+#define BRAKE_1_LOWER_BOUND 200
+#define BRAKE_1_UPPER_BOUND 450
+#define BRAKE_2_LOWER_BOUND 200
+#define BRAKE_2_UPPER_BOUND 300
 #define STEERING_POT_RIGHT_BOUND 275
 #define STEERING_POT_LEFT_BOUND 960
 
@@ -27,11 +29,11 @@ uint16_t accel_2_transfer_fn(uint16_t reading) {
 }
 
 uint16_t brake_1_transfer_fn(uint16_t reading) {
-  return linear_transfer_fn(reading, BRAKE_LOWER_BOUND, BRAKE_UPPER_BOUND);
+  return linear_transfer_fn(reading, BRAKE_1_LOWER_BOUND, BRAKE_1_UPPER_BOUND);
 }
 
 uint16_t brake_2_transfer_fn(uint16_t reading) {
-  return linear_transfer_fn(reading, BRAKE_LOWER_BOUND, BRAKE_UPPER_BOUND);
+  return linear_transfer_fn(reading, BRAKE_2_LOWER_BOUND, BRAKE_2_UPPER_BOUND);
 }
 
 uint16_t steering_transfer_fn(uint16_t reading) {

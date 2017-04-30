@@ -81,9 +81,6 @@ void check_conflict(ADC_STATE_T *adc_state) {
         brake_travel > CONFLICT_BEGIN_BRAKE_TRAVEL;
     adc_state->has_conflict = should_add_conflict;
   }
-
-  // TODO remove this!
-  adc_state->has_conflict = false;
 }
 
 bool check_implausibility(uint16_t accel_1_travel, uint16_t accel_2_travel) {

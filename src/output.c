@@ -15,7 +15,8 @@ void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
 
   // TODO more complicated logic for determining torque - for now just use raw throttle
   uint16_t pedal_travel = min(adc_state->accel_1_travel, adc_state->accel_2_travel);
-  uint16_t brake_travel = min(adc_state->brake_1_travel, adc_state->brake_2_travel);
+  // TODO when we figure out how to incorporate brake 2
+  uint16_t brake_travel = adc_state->brake_1_travel;
 
   bool should_zero =
       adc_state->has_conflict || adc_state->implausibility_reported;
