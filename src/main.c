@@ -147,6 +147,7 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   msg.throttle_implausible = adc_output->throttle_implausible;
   msg.brake_throttle_conflict = adc_output->brake_throttle_conflict;
 
+  /*
   Serial_Print("torque: ");
   Serial_PrintNumber(msg.torque, 10);
   Serial_Print(", brake_pressure: ");
@@ -156,6 +157,7 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   Serial_Print(", brake_conflict: ");
   Serial_Print(msg.brake_throttle_conflict ? "true" : "false");
   Serial_Println("");
+  */
   Can_ErrorID_T result = Can_FrontCanNode_DriverOutput_Write(&msg);
   if (result != CAN_ERROR_NONE) {
     Serial_Print("driver_write_err: ");
@@ -169,6 +171,7 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   } else {
       resettingPeripheral = false;
   }
+  
 }
 
 void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
@@ -179,15 +182,15 @@ void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
   msg.brake_1_raw = adc_output->brake_1_raw;
   msg.brake_2_raw = adc_output->brake_2_raw;
 
-  /* Serial_Print("accel_1: "); */
-  /* Serial_PrintNumber(msg.accel_1_raw, 10); */
-  /* Serial_Print(", accel_2: "); */
-  /* Serial_PrintNumber(msg.accel_2_raw, 10); */
-  /* Serial_Print(", brake_1: "); */
-  /* Serial_PrintNumber(msg.brake_1_raw, 10); */
-  /* Serial_Print(", brake_2: "); */
-  /* Serial_PrintNumber(msg.brake_2_raw, 10); */
-  /* Serial_Println(""); */
+  Serial_Print("accel_1: ");
+  Serial_PrintNumber(msg.accel_1_raw, 10);
+  Serial_Print(", accel_2: ");
+  Serial_PrintNumber(msg.accel_2_raw, 10);
+  Serial_Print(", brake_1: ");
+  Serial_PrintNumber(msg.brake_1_raw, 10);
+  Serial_Print(", brake_2: ");
+  Serial_PrintNumber(msg.brake_2_raw, 10);
+  Serial_Println("");
   Can_ErrorID_T result = Can_FrontCanNode_RawValues_Write(&msg);
   if (result != CAN_ERROR_NONE) {
     Serial_Print("raw_write_err: ");
