@@ -6,6 +6,9 @@
 #define TWO_BYTE_MAX 32767
 #define BYTE_MAX 255
 
+  // Determines degree of engagement necessary for RTD
+#define BRAKE_ENGAGED_THRESHOLD 100
+
 void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
   adc_output->accel_1_raw = adc_state->accel_1_raw;
   adc_output->accel_2_raw = adc_state->accel_2_raw;
@@ -26,4 +29,6 @@ void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
   adc_output->steering_position = scale(adc_state->steering_travel, TRAVEL_MAX, BYTE_MAX);
   adc_output->throttle_implausible = adc_state->implausibility_reported;
   adc_output->brake_throttle_conflict = adc_state->has_conflict;
+
+  adc_output->brake_engaged = brake_travel > BRAKE_ENGAGED_THRESHOLD;
 }

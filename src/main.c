@@ -117,6 +117,7 @@ void Init_ADC_Structs(void) {
   adc_output.steering_position = 0;
   adc_output.throttle_implausible = false;
   adc_output.brake_throttle_conflict = false;
+  adc_output.brake_engaged = false;
 }
 
 /**
@@ -147,6 +148,8 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   msg.throttle_implausible = adc_output->throttle_implausible;
   msg.brake_throttle_conflict = adc_output->brake_throttle_conflict;
 
+  msg.brake_engaged = adc_output->brake_engaged;
+
   /*
   Serial_Print("torque: ");
   Serial_PrintNumber(msg.torque, 10);
@@ -171,7 +174,6 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
   } else {
       resettingPeripheral = false;
   }
-  
 }
 
 void send_raw_values_message(ADC_OUTPUT_T *adc_output) {

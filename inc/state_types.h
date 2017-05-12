@@ -96,6 +96,8 @@ typedef struct ADC_OUTPUT {
 
   bool throttle_implausible;
   bool brake_throttle_conflict;
+
+  bool brake_engaged;
 } ADC_OUTPUT_T;
 
 #endif
