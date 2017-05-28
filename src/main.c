@@ -26,8 +26,8 @@ volatile uint32_t msTicks;
 
 // integers in [0:4294967296] representing the number of clock cycles between
 // ticks from wheel speed sensors
-volatile uint32_t wheel_1_clock_cycles_between_ticks;
-volatile uint32_t wheel_2_clock_cycles_between_ticks;
+volatile uint32_t wheel_1_clock_cycles_between_ticks = 0;
+volatile uint32_t wheel_2_clock_cycles_between_ticks = 0;
 
 const uint32_t DRIVER_OUTPUT_MESSAGE_PERIOD_MS = 20;
 const uint32_t RPM_MESSAGE_PERIOD_MS = 20;
@@ -52,19 +52,19 @@ void SysTick_Handler(void) {
   msTicks++;
 }
 
-// Interrupt handler for timer 0 capture pin. This function get called automatically on 
+// Interrupt handler for timer 0 capture pin. This function get called automatically on
 // a rising edge of the signal going into the timer capture pin
 void TIMER32_0_IRQHandler(void) {
-  Chip_TIMER_Reset(LPC_TIMER32_0);		        /* Reset the timer immediately */
-  Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);	    /* Clear the capture */
+  Chip_TIMER_Reset(LPC_TIMER32_0);            /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);      /* Clear the capture */
   wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
 }
 
-// Interrupt handler for timer 1 capture pin. This function get called automatically on 
+// Interrupt handler for timer 1 capture pin. This function get called automatically on
 // a rising edge of the signal going into the timer capture pin
 void TIMER32_1_IRQHandler(void) {
-  Chip_TIMER_Reset(LPC_TIMER32_1);		        /* Reset the timer immediately */
-  Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);	    /* Clear the capture */
+  Chip_TIMER_Reset(LPC_TIMER32_1);            /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);      /* Clear the capture */
   wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
 }
 
@@ -150,17 +150,15 @@ void send_driver_output_message(ADC_OUTPUT_T *adc_output) {
 
   msg.brake_engaged = adc_output->brake_engaged;
 
-  /*
-  Serial_Print("torque: ");
-  Serial_PrintNumber(msg.torque, 10);
-  Serial_Print(", brake_pressure: ");
-  Serial_PrintNumber(msg.brake_pressure, 10);
-  Serial_Print(", throttle_implausible: ");
-  Serial_Print(msg.throttle_implausible ? "true" : "false");
-  Serial_Print(", brake_conflict: ");
-  Serial_Print(msg.brake_throttle_conflict ? "true" : "false");
-  Serial_Println("");
-  */
+  /* Serial_Print("torque: "); */
+  /* Serial_PrintNumber(msg.torque, 10); */
+  /* Serial_Print(", brake_pressure: "); */
+  /* Serial_PrintNumber(msg.brake_pressure, 10); */
+  /* Serial_Print(", throttle_implausible: "); */
+  /* Serial_Print(msg.throttle_implausible ? "true" : "false"); */
+  /* Serial_Print(", brake_conflict: "); */
+  /* Serial_Print(msg.brake_throttle_conflict ? "true" : "false"); */
+  /* Serial_Println(""); */
   Can_ErrorID_T result = Can_FrontCanNode_DriverOutput_Write(&msg);
   if (result != CAN_ERROR_NONE) {
     Serial_Print("driver_write_err: ");
@@ -209,7 +207,7 @@ void send_raw_values_message(ADC_OUTPUT_T *adc_output) {
 }
 
 void send_rpm_message(void) {
-  // TODO
+
 }
 
 /**
