@@ -7,7 +7,7 @@
 #define BYTE_MAX 255
 
   // Determines degree of engagement necessary for RTD
-#define BRAKE_ENGAGED_THRESHOLD 50
+#define BRAKE_ENGAGED_THRESHOLD 100
 
 void update_adc_outputs(ADC_STATE_T *adc_state, ADC_OUTPUT_T *adc_output) {
   adc_output->accel_1_raw = adc_state->accel_1_raw;
