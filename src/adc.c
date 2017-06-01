@@ -9,8 +9,6 @@ static ADC_CLOCK_SETUP_T adc_setup;
 
 void ADC_Init(void) {
   const uint32_t ADC_PIN_CONFIG = IOCON_FUNC2 | IOCON_MODE_INACT | IOCON_ADMODE_EN;
-  Serial_Print("Setting config to ");
-  Serial_PrintlnNumber(ADC_PIN_CONFIG, 2);
 
   Chip_ADC_Init(LPC_ADC, &adc_setup);
 

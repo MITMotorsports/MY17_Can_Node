@@ -2,7 +2,7 @@
 #include "Input.h"
 #include "Output.h"
 #include "Serial.h"
-#include "State.h"
+#include "state.h"
 
 #include "timer.h"
 
@@ -54,6 +54,7 @@ void TIMER32_0_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_0);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);      /* Clear the capture */
   wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+  Serial_Println("Wheel 1");
 }
 
 // Interrupt handler for timer 1 capture pin. This function get called automatically on
@@ -62,6 +63,7 @@ void TIMER32_1_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_1);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);      /* Clear the capture */
   wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+  Serial_Println("Wheel 2");
 }
 
 void Set_Interrupt_Priorities(void) {

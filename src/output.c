@@ -63,8 +63,8 @@ void process_can(Input_T *input, State_T *state, Can_Output_T *can) {
 
 void handle_can_error(Can_ErrorID_T error) {
   if (error != Can_Error_NONE && error != Can_Error_NO_RX) {
-    Serial_Print("can_write_err: ");
-    Serial_PrintlnNumber(error, 16);
+    /* Serial_Print("can_write_err: "); */
+    /* Serial_PrintlnNumber(error, 16); */
     if (!resettingPeripheral) {
       resettingPeripheral = true;
       // TODO add this to CAN library
@@ -120,16 +120,16 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   msg.brake_engaged = brake > brake_engaged_threshold;
   msg.steering_position = 0;
 
-  Serial_Print("torque: ");
-  Serial_PrintNumber(msg.torque, 10);
-  Serial_Print(", brake: ");
-  Serial_PrintNumber(msg.brake_pressure, 10);
-  Serial_Print(", engaged: ");
-  Serial_Print(msg.brake_engaged ? "true" : "false");
-  Serial_Print(", implaus: ");
-  Serial_Print(msg.throttle_implausible ? "true" : "false");
-  Serial_Print(", conflict: ");
-  Serial_Println(msg.brake_throttle_conflict ? "true" : "false");
+  /* Serial_Print("torque: "); */
+  /* Serial_PrintNumber(msg.torque, 10); */
+  /* Serial_Print(", brake: "); */
+  /* Serial_PrintNumber(msg.brake_pressure, 10); */
+  /* Serial_Print(", engaged: "); */
+  /* Serial_Print(msg.brake_engaged ? "true" : "false"); */
+  /* Serial_Print(", implaus: "); */
+  /* Serial_Print(msg.throttle_implausible ? "true" : "false"); */
+  /* Serial_Print(", conflict: "); */
+  /* Serial_Println(msg.brake_throttle_conflict ? "true" : "false"); */
   return Can_FrontCanNode_DriverOutput_Write(&msg);
 }
 

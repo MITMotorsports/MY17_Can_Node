@@ -110,8 +110,8 @@ void update_can(Input_T *input) {
 
 void can_process_error(void) {
   Can_ErrorID_T err = Can_Error_Read();
-  Serial_Print("can_read_err: ");
-  Serial_PrintlnNumber(err, 16);
+  /* Serial_Print("can_read_err: "); */
+  /* Serial_PrintlnNumber(err, 16); */
 }
 
 void can_process_unknown(Input_T *input) {
