@@ -1,13 +1,9 @@
-#include "adc.h"
-#include "serial.h"
+#include "Adc.h"
 
 #include <stdint.h>
 #include <string.h>
 
-#include "chip.h"
-#include "transfer_functions.h"
-
-#define ADC_UPDATE_PERIOD_MS 10
+#include "Serial.h"
 
 static ADC_CLOCK_SETUP_T adc_setup;
 
@@ -49,22 +45,4 @@ uint16_t ADC_Read(ADC_CHANNEL_T channel) {
   uint16_t result = 0;
   Chip_ADC_ReadValue(LPC_ADC, channel, &result);
   return result;
-}
-
-uint8_t ADC_Read_Byte(ADC_CHANNEL_T channel) {
-  uint16_t ten_bit_val = ADC_Read(channel);
-  uint8_t eight_bit_val = ten_bit_val >> 2;
-  return eight_bit_val;
-}
-
-void update_adc_inputs(ADC_INPUT_T *adc_input) {
-  uint32_t nextUpdate_ms = adc_input->lastUpdate_ms + ADC_UPDATE_PERIOD_MS;
-  if (adc_input->msTicks >= nextUpdate_ms) {
-    adc_input->accel_1_raw = ADC_Read(ACCEL_1_CHANNEL);
-    adc_input->accel_2_raw = ADC_Read(ACCEL_2_CHANNEL);
-    adc_input->brake_1_raw = ADC_Read(BRAKE_1_CHANNEL);
-    adc_input->brake_2_raw = ADC_Read(BRAKE_2_CHANNEL);
-    adc_input->steering_raw = ADC_Read(STEERING_CHANNEL);
-    adc_input->lastUpdate_ms = adc_input->msTicks;
-  }
 }
