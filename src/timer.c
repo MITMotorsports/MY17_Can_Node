@@ -21,9 +21,9 @@ void Timer_Init(void) {
   LPC_TIMER32_1->CCR |= 5;	
 
   /* Set PIO1_5 to the 32 bit timer capture function for wheel speed sensor 1 */
-  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_5, (IOCON_FUNC2|IOCON_MODE_INACT));	
+  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_5, (IOCON_FUNC2|IOCON_MODE_INACT));
   /* Set PIO1_5 to the 32 bit timer capture function for wheel speed sensor 2 */
-  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_0, (IOCON_FUNC3|IOCON_MODE_INACT));	
+  Chip_IOCON_PinMuxSet(LPC_IOCON, IOCON_PIO1_0, (IOCON_FUNC3|IOCON_MODE_INACT|IOCON_DIGMODE_EN));
 }
 
 void Timer_Start(void) {
