@@ -6,13 +6,15 @@
 
 #define DRIVER_OUTPUT_MSG_MS 20
 #define RAW_VALUES_MSG_MS 100
+#define WHEEL_SPEED_MSG_MS 20
+
 
 void update_can_state(Input_T *input, State_T *state, Output_T *output);
 
 bool period_reached(uint32_t start, uint32_t period, uint32_t msTicks);
 void update_can_driver_output(Message_State_T *state, Can_Output_T *output, uint32_t msTicks);
 void update_can_raw_values(Message_State_T *state, Can_Output_T *output, uint32_t msTicks);
-// void update_can_wheel_speed(Input_T *input, Message_State_T *state, Can_Output_T *output);
+void update_can_wheel_speed(Message_State_T *state, Can_Output_T *output, uint32_t msTicks);
 
 void State_initialize(State_T *state) {
   state->rules->has_conflict = false;
@@ -40,7 +42,7 @@ void update_can_state(Input_T *input, State_T *state, Output_T *output) {
 
   update_can_driver_output(message, can, msTicks);
   update_can_raw_values(message, can, msTicks);
-  // update_can_wheel_speed(input, message, can);
+  update_can_wheel_speed(message, can, msTicks);
 }
 
 void update_can_driver_output(Message_State_T *message, Can_Output_T *can, uint32_t msTicks) {
@@ -61,7 +63,17 @@ void update_can_raw_values(Message_State_T *message, Can_Output_T *can, uint32_t
   }
 }
 
+void update_can_wheel_speed(Message_State_T *message, Can_Output_T *can, uint32_t msTicks) {
+  uint32_t *last_msg = &message->can_wheel_speed_ms;
+
+  if(period_reached(*last_msg, WHEEL_SPEED_MSG_MS, msTicks)) {
+    *last_msg = msTicks;
+    can->send_wheel_speed_msg = true;
+  }
+}
+
 bool period_reached(uint32_t start, uint32_t period, uint32_t msTicks) {
   const uint32_t next_time = start + period;
   return next_time < msTicks;
 }
+

@@ -93,6 +93,8 @@ void initialize_structs(void) {
  */
 void fill_input(void) {
   input.msTicks = msTicks;
+  input.speed->wheel_1_click_time = wheel_1_clock_cycles_between_ticks;
+  input.speed->wheel_2_click_time = wheel_2_clock_cycles_between_ticks;
   Input_fill_input(&input);
 }
 

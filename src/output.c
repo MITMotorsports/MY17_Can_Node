@@ -16,6 +16,15 @@
 // Determines degree of engagement necessary for RTD
 #define BRAKE_ENGAGED_THRESHOLD 150
 
+// 48 MHz (for 32 bit interrupts) = 48M cycles per second
+#define CYCLES_PER_MICROSECOND 48.0
+// Microsecond = 1 millionth of a second
+#define MICROSECONDS_PER_MILLISECOND 1000
+// TODO count number of teeth on wheel
+#define CLICKS_PER_REV 23
+// Pointless comment to not break pattern
+#define SECONDS_PER_MINUTE 60
+
 static bool resettingPeripheral = false;
 
 void process_can(Input_T *input, State_T *state, Can_Output_T *can);
@@ -23,8 +32,9 @@ void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging);
 
 Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules);
 Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc);
-// Can_ErrorID_T write_can_wheel_speed(Input_T *input, State_T *state);
+Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed);
 void handle_can_error(Can_ErrorID_T error);
+uint32_t click_time_to_mRPM(uint32_t cycles_per_click);
 
 void Output_initialize(Output_T *output) {
   output->can->send_driver_output_msg = false;
@@ -57,7 +67,7 @@ void process_can(Input_T *input, State_T *state, Can_Output_T *can) {
   }
   if (can->send_wheel_speed_msg) {
     can->send_wheel_speed_msg = false;
-    // handle_can_error(write_can_wheel_speed(input, state));
+    handle_can_error(write_can_wheel_speed(input->speed));
   }
 }
 
@@ -142,6 +152,31 @@ Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc) {
   msg.brake_2_raw = adc->brake_2_raw;
 
   return Can_FrontCanNode_RawValues_Write(&msg);
+}
+
+Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed) {
+  Can_FrontCanNode_WheelSpeed_T msg;
+
+  msg.front_left_wheel_speed = click_time_to_mRPM(speed->wheel_1_click_time);
+  msg.front_right_wheel_speed = click_time_to_mRPM(speed->wheel_2_click_time);
+
+  return Can_FrontCanNode_WheelSpeed_Write(&msg);
+}
+
+uint32_t click_time_to_mRPM(uint32_t cycles_per_click) {
+  if (cycles_per_click == 0) {
+    return 0;
+  }
+
+  const float us_per_click = cycles_per_click / CYCLES_PER_MICROSECOND;
+  const float us_per_rev = us_per_click * CLICKS_PER_REV;
+  const float ms_per_rev = us_per_rev / MICROSECONDS_PER_MILLISECOND;
+
+  const float rev_per_ms = 1.0 / ms_per_rev;
+  // revs per ms * 1000 = revs per s; revs per s / 1000 = mrevs per s
+  const float mrev_per_s = rev_per_ms;
+  const float mrev_per_min = mrev_per_s / SECONDS_PER_MINUTE;
+  return (uint32_t)(mrev_per_min);
 }
 
 void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging) {
