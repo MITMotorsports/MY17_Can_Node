@@ -163,8 +163,8 @@ Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc) {
 Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed) {
   Can_FrontCanNode_WheelSpeed_T msg;
 
-  msg.front_left_wheel_speed = click_time_to_mRPM(speed->wheel_1_click_time);
-  msg.front_right_wheel_speed = click_time_to_mRPM(speed->wheel_2_click_time);
+  msg.front_left_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_1_click_time);
+  msg.front_right_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_2_click_time);
 
   return Can_FrontCanNode_WheelSpeed_Write(&msg);
 }
