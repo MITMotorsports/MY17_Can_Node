@@ -8,7 +8,6 @@
 #define RAW_VALUES_MSG_MS 100
 #define WHEEL_SPEED_MSG_MS 20
 
-
 void update_can_state(Input_T *input, State_T *state, Output_T *output);
 
 bool period_reached(uint32_t start, uint32_t period, uint32_t msTicks);

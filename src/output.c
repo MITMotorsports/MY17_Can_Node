@@ -17,9 +17,11 @@
 #define BRAKE_ENGAGED_THRESHOLD 150
 
 // 48 MHz (for 32 bit interrupts) = 48M cycles per second
-#define CYCLES_PER_MICROSECOND 48.0
+#define CYCLES_PER_MICROSECOND 48
 // Microsecond = 1 millionth of a second
-#define MICROSECONDS_PER_MILLISECOND 1000
+#define MICROSECONDS_PER_SECOND_F 1000000.0
+// 1000 millirevs = 1 rev
+#define MILLIREVS_PER_REV_F 1000.0
 // TODO count number of teeth on wheel
 #define CLICKS_PER_REV 23
 // Pointless comment to not break pattern
@@ -101,6 +103,10 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   Can_FrontCanNode_DriverOutput_T msg;
 
   msg.torque = should_zero ? 0 : accel;
+
+  // TODO when adding launch control
+  msg.torque_before_control = msg.torque;
+
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;
   msg.brake_throttle_conflict = conflict;
@@ -168,15 +174,16 @@ uint32_t click_time_to_mRPM(uint32_t cycles_per_click) {
     return 0;
   }
 
-  const float us_per_click = cycles_per_click / CYCLES_PER_MICROSECOND;
-  const float us_per_rev = us_per_click * CLICKS_PER_REV;
-  const float ms_per_rev = us_per_rev / MICROSECONDS_PER_MILLISECOND;
+  const uint32_t us_per_click = cycles_per_click / CYCLES_PER_MICROSECOND;
+  const uint32_t us_per_rev = us_per_click * CLICKS_PER_REV;
 
-  const float rev_per_ms = 1.0 / ms_per_rev;
-  // revs per ms * 1000 = revs per s; revs per s / 1000 = mrevs per s
-  const float mrev_per_s = rev_per_ms;
-  const float mrev_per_min = mrev_per_s / SECONDS_PER_MINUTE;
-  return (uint32_t)(mrev_per_min);
+  const float s_per_rev = us_per_rev / MICROSECONDS_PER_SECOND_F;
+
+  const uint32_t mrev_per_s = (uint32_t)
+    (MILLIREVS_PER_REV_F / s_per_rev);
+
+  const uint32_t mrev_per_min = mrev_per_s * SECONDS_PER_MINUTE;
+  return mrev_per_min;
 }
 
 void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging) {

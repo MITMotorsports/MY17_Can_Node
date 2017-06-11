@@ -77,27 +77,6 @@ void update_can(Input_T *input) {
       can_process_unknown(input);
       break;
 
-    /* case Can_MC_DataReading_Msg: */
-    /*   can_process_mc_data(input); */
-    /*   break; */
-    /*  */
-    /* case Can_MC_State_Msg: */
-    /*   can_process_mc_state(input); */
-    /*   break; */
-    /*  */
-    /* case Can_CurrentSensor_Voltage_Msg: */
-    /*   can_process_voltage(input); */
-    /*   break; */
-    /* case Can_CurrentSensor_Current_Msg: */
-    /*   can_process_current(input); */
-    /*   break; */
-    /* case Can_CurrentSensor_Power_Msg: */
-    /*   can_process_power(input); */
-    /*   break; */
-    /* case Can_CurrentSensor_Energy_Msg: */
-    /*   can_process_energy(input); */
-    /*   break; */
-
     case Can_Vcu_DashHeartbeat_Msg:
       can_process_vcu_dash(input);
       break;
@@ -110,6 +89,7 @@ void update_can(Input_T *input) {
 
 void can_process_error(void) {
   Can_ErrorID_T err = Can_Error_Read();
+  UNUSED(err);
   /* Serial_Print("can_read_err: "); */
   /* Serial_PrintlnNumber(err, 16); */
 }
