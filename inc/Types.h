@@ -18,8 +18,8 @@ typedef struct {
 typedef struct {
   uint32_t wheel_1_click_time;
   uint32_t wheel_2_click_time;
-
-  uint32_t last_updated;
+  uint32_t wheel_1_last_updated;
+  uint32_t wheel_2_last_updated;
 } Speed_Input_T;
 
 typedef struct {

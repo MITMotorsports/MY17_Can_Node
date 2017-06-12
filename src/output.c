@@ -13,6 +13,8 @@
 #define TEN_BIT_MAX 1023
 #define BYTE_MAX 255
 
+#define WHEEL_SPEED_TIMEOUT_MS 1000
+
 // Determines degree of engagement necessary for RTD
 #define BRAKE_ENGAGED_THRESHOLD 150
 
@@ -34,9 +36,9 @@ void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging);
 
 Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules);
 Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc);
-Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed);
+Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed, uint32_t msTicks);
 void handle_can_error(Can_ErrorID_T error);
-uint32_t click_time_to_mRPM(uint32_t cycles_per_click);
+uint32_t click_time_to_mRPM(uint32_t cycles_per_click, uint32_t last_updated, uint32_t msTicks);
 
 void Output_initialize(Output_T *output) {
   output->can->send_driver_output_msg = false;
@@ -69,7 +71,7 @@ void process_can(Input_T *input, State_T *state, Can_Output_T *can) {
   }
   if (can->send_wheel_speed_msg) {
     can->send_wheel_speed_msg = false;
-    handle_can_error(write_can_wheel_speed(input->speed));
+    handle_can_error(write_can_wheel_speed(input->speed, input->msTicks));
   }
 }
 
@@ -160,17 +162,17 @@ Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc) {
   return Can_FrontCanNode_RawValues_Write(&msg);
 }
 
-Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed) {
+Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed, uint32_t msTicks) {
   Can_FrontCanNode_WheelSpeed_T msg;
 
-  msg.front_left_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_1_click_time);
-  msg.front_right_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_2_click_time);
+  msg.front_left_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_1_click_time, speed->wheel_1_last_updated, msTicks);
+  msg.front_right_wheel_speed_mRPM = click_time_to_mRPM(speed->wheel_2_click_time, speed->wheel_2_last_updated, msTicks);
 
   return Can_FrontCanNode_WheelSpeed_Write(&msg);
 }
 
-uint32_t click_time_to_mRPM(uint32_t cycles_per_click) {
-  if (cycles_per_click == 0) {
+uint32_t click_time_to_mRPM(uint32_t cycles_per_click, uint32_t last_updated, uint32_t msTicks) {
+  if (cycles_per_click == 0 || last_updated + WHEEL_SPEED_TIMEOUT_MS < msTicks) {
     return 0;
   }
 

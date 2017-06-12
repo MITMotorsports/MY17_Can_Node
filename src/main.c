@@ -23,6 +23,9 @@ volatile uint32_t msTicks;
 volatile uint32_t wheel_1_clock_cycles_between_ticks = 0;
 volatile uint32_t wheel_2_clock_cycles_between_ticks = 0;
 
+volatile uint32_t last_wheel_1_click = 0;
+volatile uint32_t last_wheel_2_click = 0;
+
 static Input_T input;
 static Adc_Input_T adc_input;
 static Speed_Input_T speed_input;
@@ -54,6 +57,7 @@ void TIMER32_0_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_0);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);      /* Clear the capture */
   wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+  last_wheel_1_click = msTicks;
   Serial_Println("Wheel 1");
 }
 
@@ -63,6 +67,7 @@ void TIMER32_1_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_1);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);      /* Clear the capture */
   wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+  last_wheel_2_click = msTicks;
   Serial_Println("Wheel 2");
 }
 
@@ -95,6 +100,8 @@ void fill_input(void) {
   input.msTicks = msTicks;
   input.speed->wheel_1_click_time = wheel_1_clock_cycles_between_ticks;
   input.speed->wheel_2_click_time = wheel_2_clock_cycles_between_ticks;
+  input.speed->wheel_1_last_updated = last_wheel_1_click;
+  input.speed->wheel_2_last_updated = last_wheel_2_click;
   Input_fill_input(&input);
 }
 

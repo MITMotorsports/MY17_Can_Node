@@ -29,7 +29,8 @@ void Input_initialize(Input_T *input) {
 
   input->speed->wheel_1_click_time = 0;
   input->speed->wheel_2_click_time = 0;
-  input->speed->last_updated = 0;
+  input->speed->wheel_1_last_updated = 0;
+  input->speed->wheel_2_last_updated = 0;
 
   input->mc->type = 0;
   input->mc->data = 0;
