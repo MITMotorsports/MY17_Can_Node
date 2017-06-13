@@ -22,9 +22,11 @@ volatile uint32_t msTicks;
 // ticks from wheel speed sensors
 volatile uint32_t wheel_1_clock_cycles_between_ticks = 0;
 volatile uint32_t wheel_2_clock_cycles_between_ticks = 0;
-
 volatile uint32_t last_wheel_1_click = 0;
 volatile uint32_t last_wheel_2_click = 0;
+volatile bool wheel_1_disregard = false;
+volatile bool wheel_2_disregard = false;
+#define WHEEL_SPEED_TIMEOUT_MS 1000
 
 static Input_T input;
 static Adc_Input_T adc_input;
@@ -56,7 +58,11 @@ void SysTick_Handler(void) {
 void TIMER32_0_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_0);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);      /* Clear the capture */
-  wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+  if (wheel_1_disregard) {
+    wheel_1_clock_cycles_between_ticks = 0;
+  } else {
+    wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
+  }
   last_wheel_1_click = msTicks;
   Serial_Println("Wheel 1");
 }
@@ -66,7 +72,11 @@ void TIMER32_0_IRQHandler(void) {
 void TIMER32_1_IRQHandler(void) {
   Chip_TIMER_Reset(LPC_TIMER32_1);            /* Reset the timer immediately */
   Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);      /* Clear the capture */
-  wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+  if (wheel_2_disregard) {
+    wheel_2_clock_cycles_between_ticks = 0;
+  } else {
+    wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
+  }
   last_wheel_2_click = msTicks;
   Serial_Println("Wheel 2");
 }
@@ -98,10 +108,25 @@ void initialize_structs(void) {
  */
 void fill_input(void) {
   input.msTicks = msTicks;
-  input.speed->wheel_1_click_time = wheel_1_clock_cycles_between_ticks;
-  input.speed->wheel_2_click_time = wheel_2_clock_cycles_between_ticks;
-  input.speed->wheel_1_last_updated = last_wheel_1_click;
-  input.speed->wheel_2_last_updated = last_wheel_2_click;
+  // Capture values
+  const uint32_t wheel_1_click_time = wheel_1_clock_cycles_between_ticks;
+  const uint32_t wheel_1_last_updated = last_wheel_1_click;
+  const uint32_t wheel_2_click_time = wheel_2_clock_cycles_between_ticks;
+  const uint32_t wheel_2_last_updated = last_wheel_2_click;
+
+  const bool wheel_1_timeout =
+    wheel_1_last_updated + WHEEL_SPEED_TIMEOUT_MS < msTicks;
+  const bool wheel_2_timeout =
+    wheel_2_last_updated + WHEEL_SPEED_TIMEOUT_MS < msTicks;
+
+  input.speed->wheel_1_click_time = wheel_1_click_time;
+  input.speed->wheel_2_click_time = wheel_2_click_time;
+  input.speed->wheel_1_stopped = wheel_1_timeout || wheel_1_click_time == 0;
+  input.speed->wheel_2_stopped = wheel_2_timeout || wheel_2_click_time == 0;
+
+  wheel_1_disregard = wheel_1_timeout;
+  wheel_2_disregard = wheel_2_timeout;
+
   Input_fill_input(&input);
 }
 
