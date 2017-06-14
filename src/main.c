@@ -26,7 +26,7 @@ volatile uint32_t last_wheel_1_click = 0;
 volatile uint32_t last_wheel_2_click = 0;
 volatile bool wheel_1_disregard = false;
 volatile bool wheel_2_disregard = false;
-#define WHEEL_SPEED_TIMEOUT_MS 1000
+#define WHEEL_SPEED_TIMEOUT_MS 100
 
 static Input_T input;
 static Adc_Input_T adc_input;
