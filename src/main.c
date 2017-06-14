@@ -32,6 +32,9 @@ volatile uint32_t last_updated[NUM_WHEELS];
 
 #define WHEEL_SPEED_TIMEOUT_MS 100
 
+uint32_t last_speed_read_ms = 0;
+#define WHEEL_SPEED_READ_PERIOD_MS 10
+
 static Input_T input;
 static Adc_Input_T adc_input;
 static Speed_Input_T speed_input;
@@ -145,31 +148,33 @@ void initialize_structs(void) {
 void fill_input(void) {
   input.msTicks = msTicks;
 
-  // Capture values
-  uint8_t wheel;
-  for(wheel = 0; wheel < NUM_WHEELS; wheel++) {
-    const uint32_t count = num_ticks[wheel];
-    uint8_t idx;
-    if (count > 0) {
-      // If there are x ticks so far, the last tick is index (x - 1)
-      idx = (count - 1) % NUM_TEETH;
-    } else {
-      idx = 0;
+  if (last_speed_read_ms + WHEEL_SPEED_READ_PERIOD_MS < msTicks) {
+    // Capture values
+    last_speed_read_ms = msTicks;
+    uint8_t wheel;
+    for(wheel = 0; wheel < NUM_WHEELS; wheel++) {
+      const uint32_t count = num_ticks[wheel];
+      uint8_t idx;
+      if (count > 0) {
+        // If there are x ticks so far, the last tick is index (x - 1)
+        idx = (count - 1) % NUM_TEETH;
+      } else {
+        idx = 0;
+      }
+      input.speed->tick_count[wheel] = count;
+      input.speed->tick_us[wheel] = last_tick[wheel][idx];
+      if (count < NUM_TEETH) {
+        input.speed->moving_avg_us[wheel] = 0;
+      } else {
+        const uint32_t avg = big_sum[wheel] / SUM_ALL_TEETH;
+        input.speed->moving_avg_us[wheel] = avg;
+      }
+      const bool timeout =
+        last_updated[wheel] + WHEEL_SPEED_TIMEOUT_MS < msTicks;
+      input.speed->wheel_stopped[wheel] = timeout || count == 0;
+      disregard[wheel] = timeout;
     }
-    input.speed->tick_count[wheel] = count;
-    input.speed->tick_us[wheel] = last_tick[wheel][idx];
-    if (count < NUM_TEETH) {
-      input.speed->moving_avg_us[wheel] = 0;
-    } else {
-      const uint32_t avg = big_sum[wheel] / SUM_ALL_TEETH;
-      input.speed->moving_avg_us[wheel] = avg;
-    }
-    const bool timeout =
-      last_updated[wheel] + WHEEL_SPEED_TIMEOUT_MS < msTicks;
-    input.speed->wheel_stopped[wheel] = timeout || count == 0;
-    disregard[wheel] = timeout;
   }
-
   Input_fill_input(&input);
 }
 
