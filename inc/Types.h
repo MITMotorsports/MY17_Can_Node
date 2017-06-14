@@ -15,11 +15,21 @@ typedef struct {
   uint32_t last_updated;
 } Adc_Input_T;
 
+typedef enum {
+  LEFT,
+  RIGHT,
+  NUM_WHEELS
+} Wheel_T;
+
+#define NUM_TEETH 23
+#define SUM_ALL_TEETH (NUM_TEETH * (NUM_TEETH + 1) / 2)
+#define CYCLES_PER_MICROSECOND 48
+
 typedef struct {
-  uint32_t wheel_1_click_time;
-  uint32_t wheel_2_click_time;
-  bool wheel_1_stopped;
-  bool wheel_2_stopped;
+  uint32_t tick_count[NUM_WHEELS];
+  uint32_t tick_us[NUM_WHEELS];
+  uint32_t moving_avg_us[NUM_WHEELS];
+  bool wheel_stopped[NUM_WHEELS];
 } Speed_Input_T;
 
 typedef struct {

@@ -27,10 +27,13 @@ void Input_initialize(Input_T *input) {
   input->adc->brake_2_raw = 0;
   input->adc->last_updated = 0;
 
-  input->speed->wheel_1_click_time = 0;
-  input->speed->wheel_2_click_time = 0;
-  input->speed->wheel_1_stopped = false;
-  input->speed->wheel_2_stopped = false;
+  uint8_t wheel;
+  for (wheel = 0; wheel < NUM_WHEELS; wheel++) {
+    input->speed->tick_count[wheel] = 0;
+    input->speed->tick_us[wheel] = 0;
+    input->speed->moving_avg_us[wheel] = 0;
+    input->speed->wheel_stopped[wheel] = false;
+  }
 
   input->mc->type = 0;
   input->mc->data = 0;

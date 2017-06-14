@@ -16,14 +16,10 @@
 // Determines degree of engagement necessary for RTD
 #define BRAKE_ENGAGED_THRESHOLD 150
 
-// 48 MHz (for 32 bit interrupts) = 48M cycles per second
-#define CYCLES_PER_MICROSECOND 48
 // Microsecond = 1 millionth of a second
 #define MICROSECONDS_PER_SECOND_F 1000000.0
 // 1000 millirevs = 1 rev
 #define MILLIREVS_PER_REV_F 1000.0
-// TODO count number of teeth on wheel
-#define CLICKS_PER_REV 23
 // Pointless comment to not break pattern
 #define SECONDS_PER_MINUTE 60
 
@@ -163,26 +159,30 @@ Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc) {
 Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed) {
   Can_FrontCanNode_WheelSpeed_T msg;
 
-  if (speed->wheel_1_stopped) {
-    msg.front_left_wheel_speed_mRPM = 0;
-  } else {
-    msg.front_left_wheel_speed_mRPM =
-      click_time_to_mRPM(speed->wheel_1_click_time);
-  }
-
-  if (speed->wheel_2_stopped) {
-    msg.front_right_wheel_speed_mRPM = 0;
-  } else {
-    msg.front_right_wheel_speed_mRPM =
-      click_time_to_mRPM(speed->wheel_2_click_time);
+  uint8_t wheel;
+  for (wheel = 0; wheel < NUM_WHEELS; wheel++) {
+    uint32_t *ptr;
+    if (wheel == LEFT) {
+      ptr = &msg.front_left_wheel_speed_mRPM;
+    } else if (wheel == RIGHT) {
+      ptr = &msg.front_right_wheel_speed_mRPM;
+    }
+    if (speed->wheel_stopped[wheel]) {
+      *ptr = 0;
+      continue;
+    }
+    if (speed->tick_count[wheel] < NUM_TEETH) {
+      *ptr = click_time_to_mRPM(speed->tick_us[wheel]);
+    } else {
+      *ptr = click_time_to_mRPM(speed->moving_avg_us[wheel]);
+    }
   }
 
   return Can_FrontCanNode_WheelSpeed_Write(&msg);
 }
 
-uint32_t click_time_to_mRPM(uint32_t cycles_per_click) {
-  const uint32_t us_per_click = cycles_per_click / CYCLES_PER_MICROSECOND;
-  const uint32_t us_per_rev = us_per_click * CLICKS_PER_REV;
+uint32_t click_time_to_mRPM(uint32_t us_per_click) {
+  const uint32_t us_per_rev = us_per_click * NUM_TEETH;
 
   const float s_per_rev = us_per_rev / MICROSECONDS_PER_SECOND_F;
 

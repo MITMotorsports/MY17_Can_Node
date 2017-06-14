@@ -20,12 +20,16 @@ volatile uint32_t msTicks;
 
 // integers in [0:4294967296] representing the number of clock cycles between
 // ticks from wheel speed sensors
-volatile uint32_t wheel_1_clock_cycles_between_ticks = 0;
-volatile uint32_t wheel_2_clock_cycles_between_ticks = 0;
-volatile uint32_t last_wheel_1_click = 0;
-volatile uint32_t last_wheel_2_click = 0;
-volatile bool wheel_1_disregard = false;
-volatile bool wheel_2_disregard = false;
+volatile uint32_t last_tick[NUM_WHEELS][NUM_TEETH];
+
+volatile uint32_t num_ticks[NUM_WHEELS];
+volatile uint64_t big_sum[NUM_WHEELS];
+volatile uint64_t little_sum[NUM_WHEELS];
+
+volatile bool disregard[NUM_WHEELS];
+
+volatile uint32_t last_updated[NUM_WHEELS];
+
 #define WHEEL_SPEED_TIMEOUT_MS 100
 
 static Input_T input;
@@ -52,33 +56,52 @@ void SysTick_Handler(void) {
 
 /****************************************************************************/
 
+void handle_interrupt(LPC_TIMER_T* timer, Wheel_T wheel) {
+  Chip_TIMER_Reset(timer);            /* Reset the timer immediately */
+  Chip_TIMER_ClearCapture(timer, 0);      /* Clear the capture */
+  const uint32_t curr_tick = Chip_TIMER_ReadCapture(timer, 0) / CYCLES_PER_MICROSECOND;
+
+  // Interrupt can now proceed
+
+  if (disregard[wheel]) {
+    num_ticks[wheel] = 0;
+    big_sum[wheel] = 0;
+    little_sum[wheel] = 0;
+    last_updated[wheel] = msTicks;
+    return;
+  }
+
+  const uint32_t count = num_ticks[wheel];
+  const uint8_t idx = count % NUM_TEETH;
+  const uint32_t this_tooth_last_rev =
+    count < NUM_TEETH ? 0 : last_tick[wheel][idx];
+
+  // Register tick
+  last_tick[wheel][idx] = curr_tick;
+  num_ticks[wheel]++;
+
+  // Update big sum
+  big_sum[wheel] += NUM_TEETH * curr_tick;
+  big_sum[wheel] -= little_sum[wheel];
+
+  // Update little sum
+  little_sum[wheel] += curr_tick;
+  little_sum[wheel] -= this_tooth_last_rev;
+
+  // Update timestamp
+  last_updated[wheel] = msTicks;
+}
 
 // Interrupt handler for timer 0 capture pin. This function get called automatically on
 // a rising edge of the signal going into the timer capture pin
 void TIMER32_0_IRQHandler(void) {
-  Chip_TIMER_Reset(LPC_TIMER32_0);            /* Reset the timer immediately */
-  Chip_TIMER_ClearCapture(LPC_TIMER32_0, 0);      /* Clear the capture */
-  if (wheel_1_disregard) {
-    wheel_1_clock_cycles_between_ticks = 0;
-  } else {
-    wheel_1_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_0, 0);
-  }
-  last_wheel_1_click = msTicks;
-  Serial_Println("Wheel 1");
+  handle_interrupt(LPC_TIMER32_0, LEFT);
 }
 
 // Interrupt handler for timer 1 capture pin. This function get called automatically on
 // a rising edge of the signal going into the timer capture pin
 void TIMER32_1_IRQHandler(void) {
-  Chip_TIMER_Reset(LPC_TIMER32_1);            /* Reset the timer immediately */
-  Chip_TIMER_ClearCapture(LPC_TIMER32_1, 0);      /* Clear the capture */
-  if (wheel_2_disregard) {
-    wheel_2_clock_cycles_between_ticks = 0;
-  } else {
-    wheel_2_clock_cycles_between_ticks = Chip_TIMER_ReadCapture(LPC_TIMER32_1, 0);
-  }
-  last_wheel_2_click = msTicks;
-  Serial_Println("Wheel 2");
+  handle_interrupt(LPC_TIMER32_1, RIGHT);
 }
 
 void Set_Interrupt_Priorities(void) {
@@ -101,6 +124,19 @@ void initialize_structs(void) {
 
   output.can = &can_output;
   output.logging = &logging_output;
+
+  uint8_t wheel;
+  for(wheel = 0; wheel < NUM_WHEELS; wheel++) {
+    uint8_t tooth;
+    for(tooth = 0; tooth < NUM_TEETH; tooth++) {
+      last_tick[wheel][tooth] = 0;
+    }
+    num_ticks[wheel] = 0;
+    big_sum[wheel] = 0;
+    little_sum[wheel] = 0;
+    disregard[wheel] = false;
+    last_updated[wheel] = 0;
+  }
 }
 
 /**
@@ -108,24 +144,31 @@ void initialize_structs(void) {
  */
 void fill_input(void) {
   input.msTicks = msTicks;
+
   // Capture values
-  const uint32_t wheel_1_click_time = wheel_1_clock_cycles_between_ticks;
-  const uint32_t wheel_1_last_updated = last_wheel_1_click;
-  const uint32_t wheel_2_click_time = wheel_2_clock_cycles_between_ticks;
-  const uint32_t wheel_2_last_updated = last_wheel_2_click;
-
-  const bool wheel_1_timeout =
-    wheel_1_last_updated + WHEEL_SPEED_TIMEOUT_MS < msTicks;
-  const bool wheel_2_timeout =
-    wheel_2_last_updated + WHEEL_SPEED_TIMEOUT_MS < msTicks;
-
-  input.speed->wheel_1_click_time = wheel_1_click_time;
-  input.speed->wheel_2_click_time = wheel_2_click_time;
-  input.speed->wheel_1_stopped = wheel_1_timeout || wheel_1_click_time == 0;
-  input.speed->wheel_2_stopped = wheel_2_timeout || wheel_2_click_time == 0;
-
-  wheel_1_disregard = wheel_1_timeout;
-  wheel_2_disregard = wheel_2_timeout;
+  uint8_t wheel;
+  for(wheel = 0; wheel < NUM_WHEELS; wheel++) {
+    const uint32_t count = num_ticks[wheel];
+    uint8_t idx;
+    if (count > 0) {
+      // If there are x ticks so far, the last tick is index (x - 1)
+      idx = (count - 1) % NUM_TEETH;
+    } else {
+      idx = 0;
+    }
+    input.speed->tick_count[wheel] = count;
+    input.speed->tick_us[wheel] = last_tick[wheel][idx];
+    if (count < NUM_TEETH) {
+      input.speed->moving_avg_us[wheel] = 0;
+    } else {
+      const uint32_t avg = big_sum[wheel] / SUM_ALL_TEETH;
+      input.speed->moving_avg_us[wheel] = avg;
+    }
+    const bool timeout =
+      last_updated[wheel] + WHEEL_SPEED_TIMEOUT_MS < msTicks;
+    input.speed->wheel_stopped[wheel] = timeout || count == 0;
+    disregard[wheel] = timeout;
+  }
 
   Input_fill_input(&input);
 }
