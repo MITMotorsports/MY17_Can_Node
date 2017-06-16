@@ -184,15 +184,14 @@ Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed) {
 }
 
 uint32_t click_time_to_mRPM(uint32_t us_per_click) {
-  const uint32_t us_per_rev = us_per_click * NUM_TEETH;
+  const float us_per_rev = us_per_click * 1.0 * NUM_TEETH;
 
   const float s_per_rev = us_per_rev / MICROSECONDS_PER_SECOND_F;
 
-  const uint32_t mrev_per_s = (uint32_t)
-    (MILLIREVS_PER_REV_F / s_per_rev);
+  const float mrev_per_s = MILLIREVS_PER_REV_F / s_per_rev;
 
-  const uint32_t mrev_per_min = mrev_per_s * SECONDS_PER_MINUTE;
-  return mrev_per_min;
+  const float mrev_per_min = mrev_per_s * SECONDS_PER_MINUTE;
+  return (uint32_t)mrev_per_min;
 }
 
 void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging) {
