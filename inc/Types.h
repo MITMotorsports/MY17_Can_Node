@@ -33,12 +33,7 @@ typedef struct {
 } Speed_Input_T;
 
 typedef struct {
-  Can_MC_RegID_T type;
-  int16_t data;
-  bool active_current_reduction;
-  bool current_reduction_via_igbt_temp;
-  bool current_reduction_via_motor_temp;
-
+  int16_t motor_speed;
   uint32_t last_updated;
 } Mc_Input_T;
 

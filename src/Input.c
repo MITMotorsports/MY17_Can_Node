@@ -35,11 +35,7 @@ void Input_initialize(Input_T *input) {
     input->speed->wheel_stopped[wheel] = false;
   }
 
-  input->mc->type = 0;
-  input->mc->data = 0;
-  input->mc->active_current_reduction = false;
-  input->mc->current_reduction_via_igbt_temp = false;
-  input->mc->current_reduction_via_motor_temp = false;
+  input->mc->motor_speed = 0;
   input->mc->last_updated = 0;
 
   uint8_t i;
@@ -85,6 +81,9 @@ void update_can(Input_T *input) {
       can_process_vcu_dash(input);
       break;
 
+    case Can_MC_DataReading_Msg:
+      can_process_mc_data(input);
+
     case Can_No_Msg:
     default:
       break;
@@ -110,4 +109,13 @@ void can_process_vcu_dash(Input_T *input) {
 
   input->misc->hv_enabled = msg.hv_light;
   input->misc->lv_voltage = msg.lv_battery_voltage;
+}
+
+void can_process_mc_data(Input_T *input) {
+  Can_MC_DataReading_T msg;
+  Can_MC_DataReading_Read(&msg);
+  if (msg.type == CAN_MC_REG_SPEED_ACTUAL_RPM) {
+    input->mc->motor_speed = msg.value;
+    input->mc->last_updated = input->msTicks;
+  }
 }

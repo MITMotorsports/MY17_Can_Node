@@ -84,6 +84,82 @@ void handle_can_error(Can_ErrorID_T error) {
   }
 }
 
+#define MAX_INT_16 32767
+
+#define SPEED_BOTTOM_CUTOFF_PERCENTAGE 1
+#define SPEED_BOTTOM_CUTOFF_ACTUAL ((MAX_INT_16 * (SPEED_BOTTOM_CUTOFF_PERCENTAGE)) / 100)
+
+#define SPEED_TOP_CUTOFF_PERCENTAGE 10
+#define SPEED_TOP_CUTOFF_ACTUAL ((MAX_INT_16 * (SPEED_TOP_CUTOFF_PERCENTAGE)) / 100)
+
+#define SPEED_WIDTH_ACTUAL ((SPEED_TOP_CUTOFF_ACTUAL) - (SPEED_BOTTOM_CUTOFF_ACTUAL))
+
+#define TORQUE_BOTTOM_CUTOFF_PERCENTAGE 50
+#define TORQUE_BOTTOM_CUTOFF_ACTUAL ((MAX_INT_16 * (TORQUE_BOTTOM_CUTOFF_PERCENTAGE)) / 100)
+
+#define TORQUE_TOP_CUTOFF_ACTUAL MAX_INT_16
+
+#define TORQUE_HEIGHT_ACTUAL ((TORQUE_TOP_CUTOFF_ACTUAL) - (TORQUE_BOTTOM_CUTOFF_ACTUAL))
+
+int16_t int16_min(int16_t x, int16_t y) {
+  if (x < y) {
+    return x;
+  } else {
+    return y;
+  }
+}
+
+int16_t apply_torque_ramp(int16_t motor_speed, int16_t requested_torque) {
+
+  // Prevent edge case
+  if (motor_speed == -32768) {
+    motor_speed = -32767;
+  }
+
+  // Absolute value
+  if (motor_speed < 0) {
+    motor_speed = motor_speed * -1;
+  }
+
+  // If we don't need to limit, return the regular torque
+  if (motor_speed >= SPEED_TOP_CUTOFF_ACTUAL) {
+    return requested_torque;
+  }
+
+  // If we are going below the baseline, return at most baseline torque
+  if (motor_speed <= SPEED_BOTTOM_CUTOFF_ACTUAL) {
+    const int16_t min_applied_torque =
+        int16_min(requested_torque, TORQUE_BOTTOM_CUTOFF_ACTUAL);
+    return min_applied_torque;
+  }
+
+  // How much faster than baseline are we going?
+  uint32_t speed_ramp_width = motor_speed - SPEED_BOTTOM_CUTOFF_ACTUAL;
+
+  // Sanity check
+  if (speed_ramp_width > SPEED_WIDTH_ACTUAL) {
+    speed_ramp_width = SPEED_WIDTH_ACTUAL;
+    Serial_Println("BUG: SPEED_WIDTH");
+  }
+
+  // How much more torque than baseline can we apply?
+  uint32_t torque_ramp_height = speed_ramp_width * TORQUE_HEIGHT_ACTUAL / SPEED_WIDTH_ACTUAL;
+
+  // How much torque can we apply at all?
+  uint32_t max_allowable_torque = TORQUE_BOTTOM_CUTOFF_ACTUAL + torque_ramp_height;
+
+  // Sanity check
+  if (max_allowable_torque > MAX_INT_16) {
+    torque_ramp_height = MAX_INT_16;
+    Serial_Println("BUG: TORQUE_WIDTH");
+  }
+
+  const int16_t max_requested_torque =
+      int16_min(requested_torque, max_allowable_torque);
+
+  return max_requested_torque;
+}
+
 Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   Adc_Input_T *adc = input->adc;
   uint16_t accel_1 = Transform_accel_1(adc->accel_1_raw, TWO_BYTE_MAX);
@@ -98,10 +174,12 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
 
   Can_FrontCanNode_DriverOutput_T msg;
 
-  msg.torque = should_zero ? 0 : accel;
+  int16_t torque = should_zero ? 0 : accel;
+  msg.torque_before_control = torque;
 
-  // TODO when adding launch control
-  msg.torque_before_control = msg.torque;
+  // Apply ramp
+  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, torque);
+  msg.torque = controlled_torque;
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;
