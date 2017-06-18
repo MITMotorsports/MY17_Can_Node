@@ -38,10 +38,9 @@ typedef struct {
 } Mc_Input_T;
 
 typedef enum {
-  CS_Voltage,
+  CS_Voltage_Actual,
+  CS_Voltage_Steady,
   CS_Current,
-  CS_Power,
-  CS_Energy,
   CS_VALUES_LENGTH
 } Current_Sensor_Values_T;
 
