@@ -53,6 +53,7 @@ typedef struct {
 typedef struct {
   bool hv_enabled;
   uint16_t lv_voltage;
+  Can_Vcu_LimpState_T limp_state;
 } Misc_Input_T;
 
 typedef struct {

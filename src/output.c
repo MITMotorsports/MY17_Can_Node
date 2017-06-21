@@ -160,6 +160,24 @@ int16_t apply_torque_ramp(int16_t motor_speed, int16_t requested_torque) {
   return max_requested_torque;
 }
 
+int16_t apply_limp(Can_Vcu_LimpState_T limp, int16_t torque) {
+  switch(limp) {
+    case CAN_LIMP_50:
+      return torque / 2;
+      break;
+    case CAN_LIMP_33:
+      return torque / 3;
+      break;
+    case CAN_LIMP_25:
+      return torque / 4;
+      break;
+    case CAN_LIMP_NORMAL:
+    default:
+      return torque;
+      break;
+  }
+}
+
 Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   Adc_Input_T *adc = input->adc;
   uint16_t accel_1 = Transform_accel_1(adc->accel_1_raw, TWO_BYTE_MAX);
@@ -177,8 +195,12 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   int16_t torque = should_zero ? 0 : accel;
   msg.torque_before_control = torque;
 
+  // Apply limp
+  int16_t limped_torque = apply_limp(input->misc->limp_state, torque);
+
   // Apply ramp
-  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, torque);
+  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, limped_torque);
+
   msg.torque = controlled_torque;
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
@@ -187,23 +209,6 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
 
   uint16_t brake_engaged_threshold;
   if (input->misc->hv_enabled) {
-    // TODO if we ever see that lv voltage affects brake after all
-    /* uint16_t lv_voltage = input->misc->lv_voltage; */
-    /* // 750V is about 350 brake */
-    /* // 770V is about 390 brake */
-    /* // 810V is about 470 brake */
-    /* uint16_t lv_max = 810; */
-    /* uint16_t lv_min = 750; */
-    /* if (lv_voltage < lv_min) { */
-    /*   lv_voltage = lv_min; */
-    /* } else if (lv_voltage > lv_max) { */
-    /*   lv_voltage = lv_max; */
-    /* } */
-    /* lv_voltage -= lv_min; */
-    /*  */
-    /* uint16_t brake_min = 350; */
-    /* uint16_t brake_min_scaled = brake_min + lv_voltage * 3 / 2; */
-    /* brake_engaged_threshold = brake_min_scaled + 50; */
     brake_engaged_threshold = 350;
   } else {
     brake_engaged_threshold = 220;

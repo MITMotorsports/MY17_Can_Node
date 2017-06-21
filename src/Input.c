@@ -46,6 +46,7 @@ void Input_initialize(Input_T *input) {
 
   input->misc->lv_voltage = 0;
   input->misc->hv_enabled = false;
+  input->misc->limp_state = CAN_LIMP_NORMAL;
 }
 
 void Input_fill_input(Input_T *input) {
@@ -109,6 +110,7 @@ void can_process_vcu_dash(Input_T *input) {
 
   input->misc->hv_enabled = msg.hv_light;
   input->misc->lv_voltage = msg.lv_battery_voltage;
+  input->misc->limp_state = msg.limp_state;
 }
 
 void can_process_mc_data(Input_T *input) {
