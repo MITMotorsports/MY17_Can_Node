@@ -11,7 +11,7 @@
 #define CONFLICT_BEGIN_THROTTLE_TRAVEL 250
 #define CONFLICT_END_THROTTLE_TRAVEL 50
 
-#define CONFLICT_BRAKE_RAW 600
+#define CONFLICT_BRAKE_RAW 400
 
 bool check_implausibility(uint16_t accel_1, uint16_t accel_2);
 
