@@ -177,9 +177,14 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   int16_t torque = should_zero ? 0 : accel;
   msg.torque_before_control = torque;
 
-  // Apply ramp
-  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, torque);
-  msg.torque = controlled_torque;
+  if (torque != 0) {
+    // Apply ramp
+    int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, torque);
+    msg.torque = controlled_torque;
+  } else {
+    // Already zero so leave zero
+    msg.torque = torque;
+  }
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;
