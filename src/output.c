@@ -209,7 +209,7 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
     /* uint16_t brake_min = 350; */
     /* uint16_t brake_min_scaled = brake_min + lv_voltage * 3 / 2; */
     /* brake_engaged_threshold = brake_min_scaled + 50; */
-    brake_engaged_threshold = 350;
+    brake_engaged_threshold = 400;
   } else {
     brake_engaged_threshold = 220;
   }
