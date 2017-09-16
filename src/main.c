@@ -2,9 +2,9 @@
 #include "Input.h"
 #include "Output.h"
 #include "Serial.h"
-#include "state.h"
+#include "State.h"
 
-#include "timer.h"
+#include "Timer.h"
 
 #include "MY17_Can_Library.h"
 /*****************************************************************************
