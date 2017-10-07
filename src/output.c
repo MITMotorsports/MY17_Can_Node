@@ -13,9 +13,6 @@
 #define TEN_BIT_MAX 1023
 #define BYTE_MAX 255
 
-// Determines degree of engagement necessary for RTD
-#define BRAKE_ENGAGED_THRESHOLD 150
-
 // Microsecond = 1 millionth of a second
 #define MICROSECONDS_PER_SECOND_F 1000000.0
 // 1000 millirevs = 1 rev
@@ -243,7 +240,7 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
     /* uint16_t brake_min = 350; */
     /* uint16_t brake_min_scaled = brake_min + lv_voltage * 3 / 2; */
     /* brake_engaged_threshold = brake_min_scaled + 50; */
-    brake_engaged_threshold = 350;
+    brake_engaged_threshold = 260;
   } else {
     brake_engaged_threshold = 220;
   }
