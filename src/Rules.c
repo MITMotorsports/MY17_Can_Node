@@ -56,7 +56,7 @@ void Rules_update_conflict(Input_T *input, Rules_State_T *rules) {
 
   if (curr_conflict) {
     // Conflict state: Remove conflict if throttle < 5% travel (EV2.5.1)
-    bool next_conflict = !(accel < CONFLICT_END_THROTTLE_TRAVEL);
+    bool next_conflict = accel >= CONFLICT_END_THROTTLE_TRAVEL;
     rules->has_conflict = next_conflict;
     return;
   }

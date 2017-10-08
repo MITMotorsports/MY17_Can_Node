@@ -17,8 +17,6 @@ void can_process_energy(Input_T *input);
 void can_process_mc_data(Input_T *input);
 void can_process_mc_state(Input_T *input);
 void can_process_vcu_dash(Input_T *input);
-void can_process_cs_voltage(Input_T *input);
-void can_process_cs_current(Input_T *input);
 
 #define ADC_UPDATE_PERIOD_MS 10
 
@@ -48,6 +46,7 @@ void Input_initialize(Input_T *input) {
 
   input->misc->lv_voltage = 0;
   input->misc->hv_enabled = false;
+  input->misc->limp_state = CAN_LIMP_NORMAL;
 }
 
 void Input_fill_input(Input_T *input) {
@@ -85,15 +84,6 @@ void update_can(Input_T *input) {
 
     case Can_MC_DataReading_Msg:
       can_process_mc_data(input);
-      break;
-
-    case Can_CurrentSensor_Voltage_Msg:
-      can_process_cs_voltage(input);
-      break;
-
-    case Can_CurrentSensor_Current_Msg:
-      can_process_cs_current(input);
-      break;
 
     case Can_No_Msg:
     default:
@@ -120,6 +110,7 @@ void can_process_vcu_dash(Input_T *input) {
 
   input->misc->hv_enabled = msg.hv_light;
   input->misc->lv_voltage = msg.lv_battery_voltage;
+  input->misc->limp_state = msg.limp_state;
 }
 
 void can_process_mc_data(Input_T *input) {
@@ -129,36 +120,4 @@ void can_process_mc_data(Input_T *input) {
     input->mc->motor_speed = msg.value;
     input->mc->last_updated = input->msTicks;
   }
-}
-
-#define CURRENT_LOWER_BOUND -10000
-#define CURRENT_UPPER_BOUND 10000
-
-void can_process_cs_voltage(Input_T *input) {
-  Can_CurrentSensor_Voltage_T msg;
-  Can_CurrentSensor_Voltage_Read(&msg);
-
-  Current_Sensor_Input_T *cs = input->current_sensor;
-
-  const int32_t last_current = cs->data[CS_Current];
-  bool above_lower = last_current > CURRENT_LOWER_BOUND;
-  bool below_upper = last_current < CURRENT_UPPER_BOUND;
-
-  // Discard any non-steady state voltage readings
-  if (above_lower && below_upper) {
-    cs->data[CS_Voltage_Steady] = msg.voltage_mV;
-    cs->last_updated[CS_Voltage_Steady] = input->msTicks;
-  }
-  cs->data[CS_Voltage_Actual] = msg.voltage_mV;
-  cs->last_updated[CS_Voltage_Actual] = input->msTicks;
-}
-
-void can_process_cs_current(Input_T *input) {
-  Can_CurrentSensor_Current_T msg;
-  Can_CurrentSensor_Current_Read(&msg);
-
-  Current_Sensor_Input_T *cs = input->current_sensor;
-
-  cs->data[CS_Current] = msg.current_mA;
-  cs->last_updated[CS_Current] = input->msTicks;
 }

@@ -157,41 +157,21 @@ int16_t apply_torque_ramp(int16_t motor_speed, int16_t requested_torque) {
   return max_requested_torque;
 }
 
-#define VOLTAGE_THRESHOLD_3 245000
-#define VOLTAGE_THRESHOLD_2 220000
-#define VOLTAGE_THRESHOLD_1 190000
-
-#define TORQUE_THRESHOLD_3 16383
-#define TORQUE_THRESHOLD_2 8191
-#define TORQUE_THRESHOLD_1 2000
-
-int16_t apply_voltage_limp(Current_Sensor_Input_T *cs, int16_t requested_torque) {
-  // Ensure everything has a valid measurement
-  uint8_t i;
-  for (i = 0; i < CS_VALUES_LENGTH; i++) {
-    if (cs->last_updated[i] == 0) {
-      return requested_torque;
-    }
-  }
-
-  // The last-ditch actual voltage checker is highest priority
-  if (cs->data[CS_Voltage_Actual] < VOLTAGE_THRESHOLD_1) {
-    return int16_min(requested_torque, TORQUE_THRESHOLD_1);
-  }
-
-  // If that's fine then use steady state voltage to slowly reduce torque
-  if (cs->data[CS_Voltage_Steady] < VOLTAGE_THRESHOLD_2) {
-    return int16_min(requested_torque, TORQUE_THRESHOLD_2);
-  }
-  else if (cs->data[CS_Voltage_Steady] < VOLTAGE_THRESHOLD_3) {
-    return int16_min(requested_torque, TORQUE_THRESHOLD_3);
-  }
-
-  //...more if necessary
-
-  // Finally, if all checks pass, just pass through the original value
-  else {
-    return requested_torque;
+int16_t apply_limp(Can_Vcu_LimpState_T limp, int16_t torque) {
+  switch(limp) {
+    case CAN_LIMP_50:
+      return torque / 2;
+      break;
+    case CAN_LIMP_33:
+      return torque / 3;
+      break;
+    case CAN_LIMP_25:
+      return torque / 4;
+      break;
+    case CAN_LIMP_NORMAL:
+    default:
+      return torque;
+      break;
   }
 }
 
@@ -212,10 +192,13 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
   int16_t torque = should_zero ? 0 : accel;
   msg.torque_before_control = torque;
 
+  // Apply limp
+  int16_t limped_torque = apply_limp(input->misc->limp_state, torque);
+
   // Apply ramp
-  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, torque);
-  int16_t voltage_limped_torque = apply_voltage_limp(input->current_sensor, controlled_torque);
-  msg.torque = voltage_limped_torque;
+  int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, limped_torque);
+
+  msg.torque = controlled_torque;
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;
