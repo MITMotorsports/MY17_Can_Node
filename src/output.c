@@ -20,16 +20,19 @@
 // Pointless comment to not break pattern
 #define SECONDS_PER_MINUTE 60
 
+#define K_P 1
+
 static bool resettingPeripheral = false;
 
-void process_can(Input_T *input, State_T *state, Can_Output_T *can);
+void process_can(Input_T *input, State_T *state, Output_T *output);
 void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging);
 
-Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules);
+Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules, Output_T *output);
 Can_ErrorID_T write_can_raw_values(Adc_Input_T *adc);
 Can_ErrorID_T write_can_wheel_speed(Speed_Input_T *speed);
 void handle_can_error(Can_ErrorID_T error);
 uint32_t click_time_to_mRPM(uint32_t cycles_per_click);
+int16_t get_torque(int16_t motor_speed, int16_t setpoint);
 
 void Output_initialize(Output_T *output) {
   output->can->send_driver_output_msg = false;
@@ -44,24 +47,25 @@ void Output_initialize(Output_T *output) {
   }
   output->logging->write_mc_data_log = false;
   output->logging->write_mc_state_log = false;
+  output->counter = 0;
 }
 
 void Output_process_output(Input_T *input, State_T *state, Output_T *output) {
-  process_can(input, state, output->can);
+  process_can(input, state, output);
   process_logging(input, state, output->logging);
 }
 
-void process_can(Input_T *input, State_T *state, Can_Output_T *can) {
-  if (can->send_driver_output_msg) {
-    can->send_driver_output_msg = false;
-    handle_can_error(write_can_driver_output(input, state->rules));
+void process_can(Input_T *input, State_T *state, Output_T *output) {
+  if (output->can->send_driver_output_msg) {
+    output->can->send_driver_output_msg = false;
+    handle_can_error(write_can_driver_output(input, state->rules, output));
   }
-  if (can->send_raw_values_msg) {
-    can->send_raw_values_msg = false;
+  if (output->can->send_raw_values_msg) {
+    output->can->send_raw_values_msg = false;
     handle_can_error(write_can_raw_values(input->adc));
   }
-  if (can->send_wheel_speed_msg) {
-    can->send_wheel_speed_msg = false;
+  if (output->can->send_wheel_speed_msg) {
+    output->can->send_wheel_speed_msg = false;
     handle_can_error(write_can_wheel_speed(input->speed));
   }
 }
@@ -175,21 +179,35 @@ int16_t apply_limp(Can_Vcu_LimpState_T limp, int16_t torque) {
   }
 }
 
-Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
+int16_t get_torque(int16_t motor_speed, int16_t setpoint) {
+  int16_t delta = motor_speed - setpoint;
+  //if (delta > 0) return 0;
+  //int16_t torque = 842 * delta / 10000;  // K_P is 0.0842 (twice the motor inertia)
+  //torque *= 136;  // Approximately MAX_INT_16 divided by 240, max output Nm
+  // Original value: 114957 / 10000
+  int16_t torque = delta * 114957 / 80000;
+  return torque;
+}
+
+Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules, Output_T *output) {
   Adc_Input_T *adc = input->adc;
   uint16_t accel_1 = Transform_accel_1(adc->accel_1_raw, TWO_BYTE_MAX);
   uint16_t accel_2 = Transform_accel_2(adc->accel_2_raw, TWO_BYTE_MAX);
   uint16_t accel = min(accel_1, accel_2);
+  //UNUSED(accel);
+  //UNUSED(accel_1);
+  //UNUSED(accel_2);
 
   uint16_t brake = adc->brake_1_raw;
   bool implausible = rules->implausibility_reported;
   bool conflict = rules->has_conflict;
 
   bool should_zero = implausible || conflict;
+  //UNUSED(should_zero);
 
   Can_FrontCanNode_DriverOutput_T msg;
 
-  int16_t torque = should_zero ? 0 : accel;
+  /*int16_t torque = should_zero ? 0 : accel;
   msg.torque_before_control = torque;
 
   // Apply limp
@@ -197,8 +215,38 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules) {
 
   // Apply ramp
   int16_t controlled_torque = apply_torque_ramp(input->mc->motor_speed, limped_torque);
+*/
+  int16_t setpoint = 1500;
 
-  msg.torque = controlled_torque;
+  if (accel > 50) { // Base off of implausibility
+    msg.torque = get_torque(input->mc->motor_speed, setpoint);
+  } else {
+    msg.torque = 0;
+  }
+
+  /*if(input->msTicks % 10 == 0) {
+    Serial_Print("Motor speed: ");
+    Serial_PrintlnNumber(input->mc->motor_speed, 10);
+  }*/
+
+  if(output->counter < NUM_LOGS) {
+    output->log_ticks[output->counter] = input->msTicks;
+    output->log_speed_setpoint[output->counter][0] = input->mc->motor_speed;
+    output->log_speed_setpoint[output->counter][1] = msg.torque;
+    output->counter++;
+  } else {
+    int i;
+    //Serial_Println("***STARTING DUMP***");
+    for(i = 0; i < NUM_LOGS; i++) {
+      Serial_PrintNumber(output->log_ticks[i], 10);
+      Serial_Print(",");
+      Serial_PrintNumber(output->log_speed_setpoint[i][0], 10);
+      Serial_Print(",");
+      Serial_PrintlnNumber(output->log_speed_setpoint[i][1], 10);
+    }
+    //Serial_Println("***ENDING DUMP***");
+    output->counter = 0;
+  }
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;

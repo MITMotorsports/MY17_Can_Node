@@ -4,7 +4,7 @@
 #include "Rules.h"
 #include "Transform.h"
 
-#define DRIVER_OUTPUT_MSG_MS 20
+#define DRIVER_OUTPUT_MSG_MS 10
 #define RAW_VALUES_MSG_MS 100
 #define WHEEL_SPEED_MSG_MS 20
 
@@ -75,4 +75,3 @@ bool period_reached(uint32_t start, uint32_t period, uint32_t msTicks) {
   const uint32_t next_time = start + period;
   return next_time < msTicks;
 }
-
