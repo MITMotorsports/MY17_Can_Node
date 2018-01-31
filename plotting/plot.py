@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import csv
-import sys
+import argparse
 
 
 def isNum(str):
@@ -11,9 +11,14 @@ def isNum(str):
         return False
 
 
-def parse_csv_output(filename, setpoint=1500, keep_zeros=False, avg_speed_threshold=None):
+def parse_csv_output(filename, avg_speed_threshold=None, keep_zeros=False, setpoint=1500):
     if not avg_speed_threshold:
         avg_speed_threshold = setpoint - 1000
+
+    print("Filename: " + filename)
+    print("Avg speed thresh: " + str(avg_speed_threshold))
+    print("Keep zeros: " + str(keep_zeros))
+    print("Setpoint: " + str(setpoint))
 
     tick_nums = []
     speeds = []
@@ -97,10 +102,15 @@ def parse_csv_output(filename, setpoint=1500, keep_zeros=False, avg_speed_thresh
 
 
 if __name__ == "__main__":
-    filename = sys.argv[1]
-    setpoint = sys.argv[2]
-    if len(sys.argv) > 3:
-        keep_zeros = sys.argv[3]
-        parse_csv_output(filename, int(setpoint), int(keep_zeros))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename")
+    parser.add_argument("-kz", "--keep_zeros", action="store_true")
+    parser.add_argument("-sp", "--setpoint", type=int)
+    parser.add_argument("-at", "--average_threshold", type=int)
+
+    args = parser.parse_args()
+
+    if args.setpoint:
+        parse_csv_output(args.filename, args.average_threshold, args.keep_zeros, args.setpoint)
     else:
-        parse_csv_output(filename, int(setpoint))
+        parse_csv_output(args.filename, args.average_threshold, args.keep_zeros)
