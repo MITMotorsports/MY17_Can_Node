@@ -6,8 +6,6 @@
 
 #include <MY17_Can_Library.h>
 
-#define NUM_LOGS 200
-
 typedef struct {
   uint16_t accel_1_raw;
   uint16_t accel_2_raw;
@@ -37,6 +35,8 @@ typedef struct {
 typedef struct {
   int16_t motor_speed;
   uint32_t last_updated;
+  int16_t actual_cmd;
+  int16_t actual_cmd_ramped;
 } Mc_Input_T;
 
 typedef enum {
@@ -117,10 +117,6 @@ typedef struct {
 typedef struct {
   Can_Output_T *can;
   Logging_Output_T *logging;
-
-  uint32_t log_ticks[NUM_LOGS]; // Log of msTicks
-  int16_t log_speed_setpoint[NUM_LOGS][2]; // Log first of motor speed, then of motor command
-  uint16_t counter;
 } Output_T;
 
 #endif

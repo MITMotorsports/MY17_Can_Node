@@ -4,7 +4,7 @@
 #include "Rules.h"
 #include "Transform.h"
 
-#define DRIVER_OUTPUT_MSG_MS 10
+#define DRIVER_OUTPUT_MSG_MS 20
 #define RAW_VALUES_MSG_MS 100
 #define WHEEL_SPEED_MSG_MS 20
 
@@ -26,6 +26,7 @@ void State_initialize(State_T *state) {
   state->message->can_wheel_speed_ms = 0;
   state->message->logging_throttle_ms = 0;
   state->message->logging_brake_ms = 0;
+  Serial_PrintlnNumber(DRIVER_OUTPUT_MSG_MS, 10);
 }
 
 void State_update_state(Input_T *input, State_T *state, Output_T *output) {

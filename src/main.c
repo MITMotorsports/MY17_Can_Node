@@ -112,7 +112,7 @@ void Set_Interrupt_Priorities(void) {
   NVIC_SetPriority(TIMER_32_0_IRQn, 0);
   NVIC_SetPriority(TIMER_32_1_IRQn, 1);
   /* Give the SysTick function a lower priority */
-  NVIC_SetPriority(SysTick_IRQn, 2);	
+  NVIC_SetPriority(SysTick_IRQn, 2);
 }
 
 void initialize_structs(void) {
@@ -140,6 +140,10 @@ void initialize_structs(void) {
     disregard[wheel] = false;
     last_updated[wheel] = 0;
   }
+
+  Input_initialize(&input);
+  State_initialize(&state);
+  Output_initialize(&output);
 }
 
 /**

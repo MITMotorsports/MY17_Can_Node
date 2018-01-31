@@ -20,9 +20,8 @@
 // Pointless comment to not break pattern
 #define SECONDS_PER_MINUTE 60
 
-#define K_P 1
-
 static bool resettingPeripheral = false;
+const int16_t k_p = 114957 / 50000;
 
 void process_can(Input_T *input, State_T *state, Output_T *output);
 void process_logging(Input_T *input, State_T *state, Logging_Output_T *logging);
@@ -47,7 +46,7 @@ void Output_initialize(Output_T *output) {
   }
   output->logging->write_mc_data_log = false;
   output->logging->write_mc_state_log = false;
-  output->counter = 0;
+  Serial_PrintlnNumber(k_p, 10);
 }
 
 void Output_process_output(Input_T *input, State_T *state, Output_T *output) {
@@ -185,7 +184,7 @@ int16_t get_torque(int16_t motor_speed, int16_t setpoint) {
   //int16_t torque = 842 * delta / 10000;  // K_P is 0.0842 (twice the motor inertia)
   //torque *= 136;  // Approximately MAX_INT_16 divided by 240, max output Nm
   // Original value: 114957 / 10000
-  int16_t torque = delta * 114957 / 80000;
+  int16_t torque = delta * k_p;
   return torque;
 }
 
@@ -229,24 +228,16 @@ Can_ErrorID_T write_can_driver_output(Input_T *input, Rules_State_T *rules, Outp
     Serial_PrintlnNumber(input->mc->motor_speed, 10);
   }*/
 
-  if(output->counter < NUM_LOGS) {
-    output->log_ticks[output->counter] = input->msTicks;
-    output->log_speed_setpoint[output->counter][0] = input->mc->motor_speed;
-    output->log_speed_setpoint[output->counter][1] = msg.torque;
-    output->counter++;
-  } else {
-    int i;
-    //Serial_Println("***STARTING DUMP***");
-    for(i = 0; i < NUM_LOGS; i++) {
-      Serial_PrintNumber(output->log_ticks[i], 10);
-      Serial_Print(",");
-      Serial_PrintNumber(output->log_speed_setpoint[i][0], 10);
-      Serial_Print(",");
-      Serial_PrintlnNumber(output->log_speed_setpoint[i][1], 10);
-    }
-    //Serial_Println("***ENDING DUMP***");
-    output->counter = 0;
-  }
+
+  Serial_PrintNumber(input->msTicks, 10);
+  Serial_Print(",");
+  Serial_PrintNumber(input->mc->motor_speed, 10);
+  Serial_Print(",");
+  Serial_PrintNumber(msg.torque, 10);
+  Serial_Print(",");
+  Serial_PrintNumber(input->mc->actual_cmd, 10);
+  Serial_Print(",");
+  Serial_PrintlnNumber(input->mc->actual_cmd_ramped, 10);
 
   msg.brake_pressure = scale(brake, TEN_BIT_MAX, BYTE_MAX);
   msg.throttle_implausible = implausible;

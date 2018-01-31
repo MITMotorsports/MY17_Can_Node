@@ -119,5 +119,9 @@ void can_process_mc_data(Input_T *input) {
   if (msg.type == CAN_MC_REG_SPEED_ACTUAL_RPM) {
     input->mc->motor_speed = msg.value;
     input->mc->last_updated = input->msTicks;
+  } else if (msg.type == CAN_MC_REG_CURRENT_CMD) {
+    input->mc->actual_cmd = msg.value;
+  } else if (msg.type == CAN_MC_REG_CURRENT_CMD_AFTER_RAMP) {
+    input->mc->actual_cmd_ramped = msg.value;
   }
 }
