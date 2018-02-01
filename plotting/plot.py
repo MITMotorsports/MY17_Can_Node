@@ -84,7 +84,7 @@ def parse_csv_output(filename, avg_speed_threshold=None, keep_zeros=False, setpo
     # Create plots
     speed_plt, = plt.plot(processed_ticks, speeds, 'm-', label="Speed")
     torque_plt, = plt.plot(processed_ticks, torques, 'c-', label="Torque CMD")
-    setpoint_plt, = plt.plot(processed_ticks, setpoints, 'b-', label="Setpoint(" + str(setpoint) + ")")
+    setpoint_plt, = plt.plot(processed_ticks, setpoints, 'b-', label="Setpoint (" + str(setpoint) + ")")
     cmds_plt, = plt.plot(processed_ticks, actual_cmds, 'y-', label="I cmd")
     cmds_ramped_plt, = plt.plot(processed_ticks, actual_ramped_cmds, 'g-', label="I cmd (ramp)")
     avg_plt, = plt.plot(processed_avg_ticks, avg_arr, 'r-', label="Average speed (" + str(avg) + ")")
@@ -96,7 +96,13 @@ def parse_csv_output(filename, avg_speed_threshold=None, keep_zeros=False, setpo
     fig = plt.gcf()
     fig.set_size_inches(20, 15)
 
-    # plt.savefig('imgs/' + filename.split('/')[-1][:-4] + '.png')
+    # Add extra info
+    txt = r'$k_p$: ' + str(k_p) + '\nPeriod: ' + str(period) + '\n'
+    axes = plt.gca()
+    img_bot = axes.get_ylim()[0]
+    plt.text(0, img_bot, txt, fontsize='xx-large')
+
+    plt.savefig('imgs/' + filename.split('/')[-1][:-4] + '.png')
 
     plt.show()
 
